@@ -19,6 +19,9 @@
 //==============================================================================
 MainComponent::MainComponent()
 {
+
+    this->openGLContext.setComponentPaintingEnabled(false);
+
     // Make sure you set the size of the component after
     // you add any child components.
     setSize (800, 600);
