@@ -1,20 +1,20 @@
 #include "MainComponent.h"
 
 
-using namespace juce::gl;
+//using namespace juce::gl;
 
-#define SOKOL_EXTERN
-#define SOKOL_IMPL
-#define SOKOL_GLCORE
-#define SOKOL_EXTERNAL_GL_LOADER
-#include "sokol_gfx.h"
-
-
-static struct {
-    sg_pass_action pass_action;
-}state;
+//#define SOKOL_EXTERN
+//#define SOKOL_IMPL
+//#define SOKOL_GLCORE
+//#define SOKOL_EXTERNAL_GL_LOADER
+//#include "sokol_gfx.h"
 
 
+//static struct {
+//    sg_pass_action pass_action;
+//}state;
+
+#include "render.h"
 
 //==============================================================================
 MainComponent::MainComponent()
@@ -35,21 +35,14 @@ void MainComponent::initialise()
 {
     // Initialise GL objects for rendering here.
 
-    {
-        sg_desc desc{};
-        sg_setup(&desc);
-        state.pass_action = {};
-        state.pass_action.colors[0].load_action = SG_LOADACTION_CLEAR;
-        auto c = juce::Colours::lightblue;
-        state.pass_action.colors[0].clear_value = { c.getFloatRed(), c.getFloatGreen(), c.getFloatBlue(), c.getFloatAlpha() };
-    }
+    _sg_initialize();
 
 }
 
 void MainComponent::shutdown()
 {
     // Free any GL objects created for rendering here.
-    sg_shutdown();
+    _sg_shutdown();
 }
 
 void MainComponent::render()
@@ -58,14 +51,8 @@ void MainComponent::render()
     //juce::OpenGLHelpers::clear (juce::Colours::black);
 
 
+    _sg_render(getWidth(), getHeight());
 
-    sg_begin_pass({ .action = state.pass_action , 
-                    .swapchain = {.width = getWidth(), .height = getHeight()}
-                  });
-
- 
-    sg_end_pass();
-    sg_commit();
 
     // Add your rendering code here...
 }
