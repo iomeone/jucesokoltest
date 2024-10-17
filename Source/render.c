@@ -37,14 +37,21 @@ ECS_COMPONENT_DECLARE(RenderData);
 
 
 
+// InitRenderData 观察者
 void InitRenderData(const ecs_iter_t* it) {
-    Triangle* t = ecs_field(it, Triangle, 1);
-
     for (int i = 0; i < it->count; i++) {
+        // 使用 ecs_get 获取 Triangle 组件
+        Triangle* t = ecs_get(it->world, it->entities[i], Triangle);
+
+        if (!t) {
+            // 如果未能获取组件，继续下一次循环
+            continue;
+        }
+
         // 创建顶点缓冲区
         sg_buffer vbuf = sg_make_buffer(&(sg_buffer_desc) {
-            .size = sizeof(t[i].vertices),
-                .data = SG_RANGE(t[i].vertices),
+            .size = sizeof(t->vertices),
+                .data = SG_RANGE(t->vertices),
                 .label = "triangle-vertices"
         });
 
@@ -86,11 +93,19 @@ void InitRenderData(const ecs_iter_t* it) {
     }
 }
 
-
-
 // RenderTriangle 系统
 void RenderTriangle(const ecs_iter_t* it) {
-    RenderData* rd = ecs_field(it, RenderData, 1);
+
+    printf("RenderTriangle called: field_count = %d\n", it->field_count);
+
+    // 检查 field_count 是否至少为 1
+    if (it->field_count < 1) {
+        printf("No fields available in iterator\n");
+        return;
+    }
+
+
+    RenderData* rd = ecs_field(it, RenderData, 0);
 
     // 开始渲染通道
 
@@ -133,7 +148,7 @@ void _sg_initialize() {
     };
 
 
-
+    ecs_log_set_level(0); // 设置日志级别为调试
     // 初始化 Flecs 世界
     world = ecs_init();
 
@@ -190,5 +205,7 @@ void _sg_render(int w, int h) {
     state.height = h;
 
     // 运行 ECS 世界
-    ecs_progress(world, 0);
+    if (!ecs_progress(world, 0)) {
+        printf("An error occurred during ecs_progress\n");
+    }
 }
