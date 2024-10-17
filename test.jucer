@@ -4,6 +4,8 @@
               addUsingNamespaceToJuceHeader="0" jucerFormatVersion="1" cppLanguageStandard="20">
   <MAINGROUP id="AEHFTP" name="test">
     <GROUP id="{F4BFA2C5-5F83-85B8-074D-0394FF02F5C5}" name="Source">
+      <FILE id="ksMi7G" name="flecs.c" compile="1" resource="0" file="Source/flecs.c"/>
+      <FILE id="s2A1Ka" name="flecs.h" compile="0" resource="0" file="Source/flecs.h"/>
       <FILE id="FNArEN" name="render.c" compile="1" resource="0" file="Source/render.c"/>
       <FILE id="ineUWP" name="gfx.c" compile="1" resource="0" file="Source/gfx.c"/>
       <FILE id="uDUJYl" name="render.h" compile="0" resource="0" file="Source/render.h"/>
