@@ -103,10 +103,10 @@ sg_pipeline init_pipeline(void) {
 
 static void SokolSetCanvas(ecs_iter_t* it) {
     SokolCanvas* canvas = ecs_field(it, SokolCanvas, 0);
-
+   
     for (int i = 0; i < it->count; i++) {
         ecs_entity_t e = it->entities[i];
-
+        const char* name = ecs_get_name(it->world, e);
         SokolBuffer buffer = {
             .instance_count = 1,
             .index_count = 6,
@@ -236,7 +236,7 @@ void _sg_initialize() {
 
     ecs_entity_t canvas_entity = ecs_new(world);
 
-
+    ecs_set_name(world, canvas_entity, "CanvasEntity");
 
     ecs_add(world, canvas_entity, SokolCanvas);
     ecs_modified(world, canvas_entity, SokolCanvas);
