@@ -10,9 +10,7 @@ static struct {
 
 static ecs_world_t* world;
 
-typedef struct {
-    float vertices[9];
-} Triangle;
+ 
 
 typedef struct SokolCanvas {
     sg_pass_action pass_action;
@@ -40,7 +38,7 @@ typedef struct SokolBuffer {
     int32_t index_count;
 } SokolBuffer;
 
-ECS_COMPONENT_DECLARE(Triangle);
+
 ECS_COMPONENT_DECLARE(SokolCanvas);
 ECS_COMPONENT_DECLARE(SokolBuffer);
 
@@ -220,7 +218,7 @@ void _sg_initialize() {
     ecs_log_set_level(-1);
     world = ecs_init();
 
-    ECS_COMPONENT_DEFINE(world, Triangle);
+
     ECS_COMPONENT_DEFINE(world, SokolCanvas);
     ECS_COMPONENT_DEFINE(world, SokolBuffer);
 
@@ -236,18 +234,12 @@ void _sg_initialize() {
 
     ECS_SYSTEM(world, RenderTriangle, EcsOnUpdate, [in] SokolCanvas, [in] SokolBuffer);
 
-    ecs_entity_t triangle_entity = ecs_new(world);
+    ecs_entity_t canvas_entity = ecs_new(world);
 
-    ecs_set(world, triangle_entity, Triangle, {
-        .vertices = {
-            -0.5f, -0.5f, 0.0f,
-             0.5f, -0.5f, 0.0f,
-             0.0f,  0.5f, 0.0f
-        }
-        });
 
-    ecs_add(world, triangle_entity, SokolCanvas);
-    ecs_modified(world, triangle_entity, SokolCanvas);
+
+    ecs_add(world, canvas_entity, SokolCanvas);
+    ecs_modified(world, canvas_entity, SokolCanvas);
 }
 
 void _sg_shutdown() {
