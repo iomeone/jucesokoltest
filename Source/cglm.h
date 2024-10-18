@@ -44,7 +44,7 @@ extern "C" {
 #  elif defined(CGLM_EXPORTS)
 #    define CGLM_EXPORT __declspec(dllexport)
 #  else
-#    define CGLM_EXPORT __declspec(dllimport)
+#    define CGLM_EXPORT //__declspec(dllimport)
 #  endif
 #  define CGLM_INLINE __forceinline
 #else
