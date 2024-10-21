@@ -1,4 +1,4 @@
-#include <flecs_components_cglm.h>
+#include "flecs_components_cglm.h"
 
 ECS_COMPONENT_DECLARE(vec3);
 ECS_COMPONENT_DECLARE(vec4);
@@ -28,3 +28,4 @@ void FlecsComponentsCglmImport(
         .count = 4
         });
 }
+
