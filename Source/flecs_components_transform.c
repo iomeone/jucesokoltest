@@ -1,3 +1,5 @@
+#define FLECS_COMPONENTS_TRANSFORM_IMPL
+
 #include "flecs_components_transform.h"
 
 ECS_COMPONENT_DECLARE(EcsTransform2);
@@ -25,4 +27,13 @@ void FlecsComponentsTransformImport(
     ECS_COMPONENT_DEFINE(world, EcsTransform3);
     ECS_COMPONENT_DEFINE(world, EcsProject2);
     ECS_COMPONENT_DEFINE(world, EcsProject3);
+
+    ecs_set_hooks(world, EcsTransform2, {
+        .ctor = flecs_default_ctor
+        });
+
+    ecs_set_hooks(world, EcsTransform3, {
+        .ctor = flecs_default_ctor
+        });
 }
+
