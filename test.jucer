@@ -45,17 +45,16 @@
             file="Source/components/flecs_systems_transform.h"/>
     </GROUP>
     <GROUP id="{F4BFA2C5-5F83-85B8-074D-0394FF02F5C5}" name="Source">
+      <FILE id="DMSk8C" name="flecs_systems_sokol.h" compile="0" resource="0"
+            file="Source/flecs_systems_sokol.h"/>
       <FILE id="viZri3" name="flecs_systems_sokol.c" compile="1" resource="0"
             file="Source/flecs_systems_sokol.c"/>
       <FILE id="N3LRKh" name="sokol_gfx.h" compile="0" resource="0" file="Source/sokol_gfx.h"/>
-      <FILE id="DMSk8C" name="flecs_systems_sokol.h" compile="0" resource="0"
-            file="Source/flecs_systems_sokol.h"/>
       <FILE id="FBNpij" name="cglm.c" compile="1" resource="0" file="Source/cglm.c"/>
       <FILE id="L5cXkb" name="cglm.h" compile="0" resource="0" file="Source/cglm.h"/>
       <FILE id="ksMi7G" name="flecs.c" compile="1" resource="0" file="Source/flecs.c"/>
       <FILE id="s2A1Ka" name="flecs.h" compile="0" resource="0" file="Source/flecs.h"/>
       <FILE id="FNArEN" name="render.c" compile="1" resource="0" file="Source/render.c"/>
-      <FILE id="ineUWP" name="gfx.c" compile="1" resource="0" file="Source/gfx.c"/>
       <FILE id="uDUJYl" name="render.h" compile="0" resource="0" file="Source/render.h"/>
       <FILE id="KbdC83" name="Main.cpp" compile="1" resource="0" file="Source/Main.cpp"/>
       <FILE id="LwVfLH" name="MainComponent.h" compile="0" resource="0" file="Source/MainComponent.h"/>
