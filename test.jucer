@@ -5,6 +5,10 @@
               headerPath=".\..\..\Source">
   <MAINGROUP id="AEHFTP" name="test">
     <GROUP id="{F4BFA2C5-5F83-85B8-074D-0394FF02F5C5}" name="Source">
+      <FILE id="kdvfn2" name="flecs_components_geometry.c" compile="1" resource="0"
+            file="Source/flecs_components_geometry.c"/>
+      <FILE id="zp3mdm" name="flecs_components_geometry.h" compile="0" resource="0"
+            file="Source/flecs_components_geometry.h"/>
       <FILE id="JESsnp" name="flecs_components_input.c" compile="1" resource="0"
             file="Source/flecs_components_input.c"/>
       <FILE id="sD9a8l" name="flecs_components_input.h" compile="0" resource="0"
