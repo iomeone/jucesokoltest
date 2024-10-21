@@ -12,7 +12,7 @@ static ecs_world_t* world;
 
  
 
-typedef struct SokolCanvas {
+typedef struct SokolCanvas {            
     sg_pass_action pass_action;
     sg_pipeline pipeline;
 } SokolCanvas;
@@ -47,8 +47,8 @@ sg_pass_action init_pass_action(const Color bg_color)
 {
     return (sg_pass_action) {
         .colors[0] = {
-            .load_action = SG_LOADACTION_CLEAR,
-            .clear_value = {
+            .action = SG_ACTION_CLEAR,
+            .value = {
                 bg_color.r,
                 bg_color.g,
                 bg_color.b,
@@ -190,10 +190,13 @@ void RenderTriangle(ecs_iter_t* it) {
     SokolCanvas* canvas = ecs_field(it, SokolCanvas, 0);
     SokolBuffer* buffer = ecs_field(it, SokolBuffer, 1);
 
-    sg_begin_pass(&(sg_pass) {
-        .action = canvas->pass_action,
-            .swapchain = (sg_swapchain){ .width = state.width, .height = state.height }
-    });
+
+    //sg_begin_pass(&(sg_pass) {
+    //    .action = canvas->pass_action,
+    //        .swapchain = (sg_swapchain){ .width = state.width, .height = state.height }
+    //});
+
+    sg_begin_default_pass(&canvas->pass_action, state.width, state.height);
 
     for (int i = 0; i < it->count; i++) {
         sg_apply_pipeline(canvas[i].pipeline);
