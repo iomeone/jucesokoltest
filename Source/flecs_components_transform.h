@@ -1,8 +1,7 @@
 #ifndef FLECS_COMPONENTS_TRANSFORM_H
 #define FLECS_COMPONENTS_TRANSFORM_H
 
-#include "flecs.h"
-#include <cglm.h>
+#include "flecs_components_cglm.h"
 
  
  
