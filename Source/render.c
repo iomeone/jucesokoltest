@@ -1,7 +1,7 @@
 #include "render.h"
 #include "sokol_gfx.h"
 #include "flecs.h"
-#include "cglm.h"
+#include <cglm.h>
 
 static struct {
     int width;
@@ -252,6 +252,6 @@ void _sg_render(int w, int h) {
     state.height = h;
 
     if (!ecs_progress(world, 0)) {
-        printf("ecs_progress 运行时出错\n");
+        printf("ecs_progress 脭脣脨脨脢卤鲁枚麓铆\n");
     }
 }
