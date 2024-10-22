@@ -6,11 +6,6 @@
 #include "flecs_components_geometry.h"
 
 static ecs_world_t* world;
-static struct {
-    int width;
-    int height;
-} state;
-
 
 extern int app_width;
 
