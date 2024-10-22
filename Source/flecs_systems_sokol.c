@@ -28075,38 +28075,43 @@ int main(int argc, char* argv[]) {
 // ██       ██████  ██████  ██████�?██  ██████
 //
 // >>public
-#if defined(SOKOL_NO_ENTRY)
-SOKOL_API_IMPL void sapp_run(const sapp_desc* desc) {
-    SOKOL_ASSERT(desc);
-    #if defined(_SAPP_MACOS)
-        _sapp_macos_run(desc);
-    #elif defined(_SAPP_IOS)
-        _sapp_ios_run(desc);
-    #elif defined(_SAPP_EMSCRIPTEN)
-        _sapp_emsc_run(desc);
-    #elif defined(_SAPP_WIN32)
-        _sapp_win32_run(desc);
-    #elif defined(_SAPP_LINUX)
-        _sapp_linux_run(desc);
-    #else
-    #error "sapp_run() not supported on this platform"
-    #endif
-}
 
-/* this is just a stub so the linker doesn't complain */
-sapp_desc sokol_main(int argc, char* argv[]) {
-    _SOKOL_UNUSED(argc);
-    _SOKOL_UNUSED(argv);
-    sapp_desc desc;
-    _sapp_clear(&desc, sizeof(desc));
-    return desc;
-}
-#else
-/* likewise, in normal mode, sapp_run() is just an empty stub */
-SOKOL_API_IMPL void sapp_run(const sapp_desc* desc) {
-    _SOKOL_UNUSED(desc);
-}
-#endif
+
+
+
+
+//#if defined(SOKOL_NO_ENTRY)
+//SOKOL_API_IMPL void sapp_run(const sapp_desc* desc) {
+//    SOKOL_ASSERT(desc);
+//    #if defined(_SAPP_MACOS)
+//        _sapp_macos_run(desc);
+//    #elif defined(_SAPP_IOS)
+//        _sapp_ios_run(desc);
+//    #elif defined(_SAPP_EMSCRIPTEN)
+//        _sapp_emsc_run(desc);
+//    #elif defined(_SAPP_WIN32)
+//        _sapp_win32_run(desc);
+//    #elif defined(_SAPP_LINUX)
+//        _sapp_linux_run(desc);
+//    #else
+//    #error "sapp_run() not supported on this platform"
+//    #endif
+//}
+//
+///* this is just a stub so the linker doesn't complain */
+//sapp_desc sokol_main(int argc, char* argv[]) {
+//    _SOKOL_UNUSED(argc);
+//    _SOKOL_UNUSED(argv);
+//    sapp_desc desc;
+//    _sapp_clear(&desc, sizeof(desc));
+//    return desc;
+//}
+//#else
+///* likewise, in normal mode, sapp_run() is just an empty stub */
+//SOKOL_API_IMPL void sapp_run(const sapp_desc* desc) {
+//    _SOKOL_UNUSED(desc);
+//}
+//#endif
 
 SOKOL_API_IMPL bool sapp_isvalid(void) {
     return _sapp.valid;
@@ -30021,16 +30026,16 @@ int sokol_run_action(
     ecs_trace("sokol: starting app '%s'", title);
 
     /* Run app */
-    sapp_run(&(sapp_desc) {
-        .frame_userdata_cb = (void(*)(void*))sokol_frame_action,
-        .event_userdata_cb = (void(*)(const sapp_event*, void*))sokol_input_action,
-        .user_data = &sokol_app_ctx,
-        .window_title = title,
-        .width = width,
-        .height = height,
-        .high_dpi = high_dpi,
-        .gl_force_gles2 = false
-    });
+    //sapp_run(&(sapp_desc) {                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         
+    //    .frame_userdata_cb = (void(*)(void*))sokol_frame_action,
+    //    .event_userdata_cb = (void(*)(const sapp_event*, void*))sokol_input_action,
+    //    .user_data = &sokol_app_ctx,
+    //    .window_title = title,
+    //    .width = width,
+    //    .height = height,
+    //    .high_dpi = high_dpi,
+    //    .gl_force_gles2 = false
+    //});
 
     return 0;
 }
