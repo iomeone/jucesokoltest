@@ -38,7 +38,7 @@ void MainComponent::initialise()
 {
     // Initialise GL objects for rendering here.
 
-    _sg_initialize();
+    _sg_initialize(getWidth(), getHeight());
 
 }
 

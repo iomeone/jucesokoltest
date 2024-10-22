@@ -28128,16 +28128,18 @@ SOKOL_API_IMPL double sapp_frame_duration(void) {
     return _sapp_timing_get_avg(&_sapp.timing);
 }
 
+int app_width = 0;
 SOKOL_API_IMPL int sapp_width(void) {
-    return (_sapp.framebuffer_width > 0) ? _sapp.framebuffer_width : 1;
+    return app_width;
 }
 
 SOKOL_API_IMPL float sapp_widthf(void) {
     return (float)sapp_width();
 }
 
+int app_height = 0;
 SOKOL_API_IMPL int sapp_height(void) {
-    return (_sapp.framebuffer_height > 0) ? _sapp.framebuffer_height : 1;
+    return  app_height;
 }
 
 SOKOL_API_IMPL float sapp_heightf(void) {
@@ -31803,7 +31805,7 @@ char* sokol_file_readln(
         return buf;
     }
 }
-
+char* dir_of_etc_sokol_shaders = 0;
 static
 int sokol_shader_parse(
     const char *filename,
@@ -31814,7 +31816,11 @@ int sokol_shader_parse(
     if (filename) {
         f = fopen(filename, "r");
         if (!f) {
+            char cwd[1024] = {0};
+            DWORD result = GetCurrentDirectoryA(sizeof(cwd), cwd);
+
             ecs_err("%s: file not found\n", filename);
+            ecs_err("%s: file not found\n", cwd);
             return -1;
         }
     }
@@ -31837,7 +31843,12 @@ int sokol_shader_parse(
             char *file = &line[10];
             last[0] = '\0';
 
-            if (sokol_shader_parse(file, NULL, out)) {
+
+            char dfile[1024] = { 0 };
+            strcpy(dfile, dir_of_etc_sokol_shaders);
+            strcat(dfile, file);
+
+            if (sokol_shader_parse(dfile, NULL, out)) {
                 return -1;
             }
         } else {
