@@ -9,6 +9,13 @@
 #include <JuceHeader.h>
 #include "MainComponent.h"
 
+
+// Windows 平台专用
+#ifdef JUCE_WINDOWS
+#include <windows.h>
+#include <stdio.h>
+#endif
+
 //==============================================================================
 class testApplication  : public juce::JUCEApplication
 {
@@ -23,6 +30,20 @@ public:
     //==============================================================================
     void initialise (const juce::String& commandLine) override
     {
+
+
+
+
+        // 打开控制台窗口，Windows 专用
+#ifdef JUCE_WINDOWS
+        AllocConsole();
+        freopen("CONOUT$", "w", stdout);  // 将 stdout 重定向到控制台
+        freopen("CONOUT$", "w", stderr);  // 将 stderr 重定向到控制台
+        printf("Log is showing here:\n");
+#endif
+
+
+
         // This method is where you should put your application's initialisation code..
 
         mainWindow.reset (new MainWindow (getApplicationName()));
