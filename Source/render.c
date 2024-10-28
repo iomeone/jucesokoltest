@@ -7,13 +7,14 @@
 
 
 
-
+//https://github.com/flecs-hub/flecs-systems-sokol
+//https://github.com/SanderMertens/bouncing-boxes
 
 
 #define BOX_BRIGHTNESS (2.5)
 #define BOX_X_COUNT (400)
 #define BOX_Y_COUNT (400)
-#define BOX_SIZE (1.5f)
+#define BOX_SIZE (2.0f)
 
 
 
@@ -31,36 +32,46 @@ float randf() {
 }
 
 void Bounce(ecs_iter_t* it) {
+
+   
     EcsPosition3* p = ecs_field(it, EcsPosition3, 0);
     EcsVelocity3* v = ecs_field(it, EcsVelocity3, 1);
     EcsRgb* c = ecs_field(it, EcsRgb, 2);
 
-    /* Fade out colors, and move squares back into position */
     for (int i = 0; i < it->count; i++) {
-        float y = p[i].y;
-        float lt = y < 0;
-        p[i].y = lt * (y + it->delta_time * v[i].y);
-        v[i].y += 20 * it->delta_time;
-
-        c[i].r = fmaxf(0.96f * c[i].r, 0.0f);
-        c[i].g = fmaxf(0.93f * c[i].g, 0.0f);
-        c[i].b = fmaxf(0.99f * c[i].b, 0.0f);
+        c[i].r = 4.0;// BOX_BRIGHTNESS* (d ? 1.0f : 0.0f);
+        c[i].b = 0.0;// BOX_BRIGHTNESS * 1.0f;
+        c[i].g = 0.0;// BOX_BRIGHTNESS* (1.0f - d * 0.2f);
     }
 
-    /* Bounce random squares. Lower threshold to increase number of bounces */
-    int threshold = RAND_MAX - RAND_MAX / 1000;
 
-    for (int i = 0; i < it->count; i++) {
-        if (rand() > threshold) {
-            p[i].y = -0.01f;
-            v[i].y = -1.0f - 5.0f * randf();
+    ///* Fade out colors, and move squares back into position */
+    //for (int i = 0; i < it->count; i++) {
+    //    float y = p[i].y;
+    //    float lt = y < 0;
+    //    p[i].y = lt * (y + it->delta_time * v[i].y);
+    //    v[i].y += 20 * it->delta_time;
 
-            bool d = dice(1.1f);
-            c[i].r = BOX_BRIGHTNESS * (d ? 1.0f : 0.0f);
-            c[i].b = BOX_BRIGHTNESS * 1.0f;
-            c[i].g = BOX_BRIGHTNESS * (1.0f - d * 0.2f);
-        }
-    }
+    //    c[i].r = fmaxf(0.96f * c[i].r, 0.0f);
+    //    c[i].g = fmaxf(0.93f * c[i].g, 0.0f);
+    //    c[i].b = fmaxf(0.99f * c[i].b, 0.0f);
+    //}
+
+    ///* Bounce random squares. Lower threshold to increase number of bounces */
+    //int threshold = RAND_MAX - RAND_MAX / 1000;
+
+    //for (int i = 0; i < it->count; i++) {
+    //    if (rand() > threshold)
+    //    {
+    //        p[i].y = -0.01f;
+    //        v[i].y = -1.0f - 5.0f * randf();
+
+    //        bool d = dice(1.1f);
+    //        c[i].r = 8.0;// BOX_BRIGHTNESS* (d ? 1.0f : 0.0f);
+    //        c[i].b = 0.0;// BOX_BRIGHTNESS * 1.0f;
+    //        c[i].g = 0.0;// BOX_BRIGHTNESS* (1.0f - d * 0.2f);
+    //    }
+    //}
 }
 
 
@@ -155,16 +166,18 @@ void _sg_initialize(int w, int h) {
 
     ecs_entity_t camera = ecs_new(world);
 
+    /* 设置摄像机的注视点为原点 */
     ecs_set(world, camera, EcsCamera, {
-        .lookat = {0.0f, 0.0f, 5.0f},
-        .up = {0.0f, -1.0f, 0.0f},
-        .fov = 20.0f,
-        .near_ = 1.0f, .far_ = 1000.0f
+        .lookat = { 0.0f, 0.0f, 0.0f },
+        .up = { 0.0f, 1.0f, 0.0f },
+        .fov = 90.0f,
+        .near_ = 0.1f,
+        .far_ = 1000.0f,
+        .ortho = false,
         });
-
     ecs_add(world, camera, EcsCameraController);
-    ecs_set(world, camera, EcsPosition3, { 0.0f, -10.0f, 250.0f });
-    ecs_set(world, camera, EcsRotation3, { .x = 0.0f, .y = 0.7f, .z = 0.0f });
+    ecs_set(world, camera, EcsPosition3, { 0.0f, 0.0f, -5.0f });
+    ecs_set(world, camera, EcsRotation3, { .x = 0.0f, .y = 0.f, .z = 0.0f });
 
     ecs_entity_t canvas = ecs_new(world);
 
@@ -173,27 +186,34 @@ void _sg_initialize(int w, int h) {
         .width = w, .height = h,
         .background_color = {0.0f, 0.0f, 0.0f},
         .camera = camera,
-        .fog_density = 5.0f
+        //.fog_density = 5.0f
         });
 
-    /* Create strip of squares */
-    for (int x = 0; x < BOX_X_COUNT; x++) {
-        for (int z = 0; z < BOX_Y_COUNT; z++) {
-            ecs_entity_t e = ecs_new(world);
-            ecs_set(world, e, EcsBox, {
-                .width = BOX_SIZE,
-                .height = BOX_SIZE * 4.0f,
-                .depth = BOX_SIZE
-                });
-            ecs_set(world, e, EcsRgb, { 0.0f, 0.0f, 0.0f });
-            ecs_set(world, e, EcsPosition3, {
-                x * BOX_SIZE - (BOX_X_COUNT / 2.0f) * BOX_SIZE,
-                0.0f,
-                z * BOX_SIZE
-                });
-            ecs_set(world, e, EcsVelocity3, { 0.0f, 0.0f, 0.0f });
-        }
-    }
+  
+
+
+    /* 创建单个盒子实体 */
+    ecs_entity_t e = ecs_new(world);
+
+    /* 设置盒子的尺寸 */
+    ecs_set(world, e, EcsBox, {
+        .width = BOX_SIZE,
+        .height = BOX_SIZE ,
+        .depth = BOX_SIZE
+        });
+
+    /* 设置盒子的颜色 */
+    ecs_set(world, e, EcsRgb, { 0.0f, 0.0f, 0.0f });
+
+    /* 设置盒子的位置为中心点 */
+    ecs_set(world, e, EcsPosition3, {
+        0.0f,  // x 坐标
+        0.0f,  // y 坐标
+        0.0f   // z 坐标
+        });
+
+    /* 设置盒子的速度（可选，如果需要的话） */
+    ecs_set(world, e, EcsVelocity3, { 0.0f, 0.0f, 0.0f });
 
 
 
