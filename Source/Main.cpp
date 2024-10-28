@@ -9,23 +9,44 @@
 #include <JuceHeader.h>
 #include "MainComponent.h"
 
+
+// Windows 平台专用
+#ifdef JUCE_WINDOWS
+#include <windows.h>
+#include <stdio.h>
+#endif
+
 //==============================================================================
-class testApplication  : public juce::JUCEApplication
+class testApplication : public juce::JUCEApplication
 {
 public:
     //==============================================================================
     testApplication() {}
 
-    const juce::String getApplicationName() override       { return ProjectInfo::projectName; }
-    const juce::String getApplicationVersion() override    { return ProjectInfo::versionString; }
-    bool moreThanOneInstanceAllowed() override             { return true; }
+    const juce::String getApplicationName() override { return ProjectInfo::projectName; }
+    const juce::String getApplicationVersion() override { return ProjectInfo::versionString; }
+    bool moreThanOneInstanceAllowed() override { return true; }
 
     //==============================================================================
-    void initialise (const juce::String& commandLine) override
+    void initialise(const juce::String& commandLine) override
     {
+
+
+
+
+        // 打开控制台窗口，Windows 专用
+#ifdef JUCE_WINDOWS
+        AllocConsole();
+        freopen("CONOUT$", "w", stdout);  // 将 stdout 重定向到控制台
+        freopen("CONOUT$", "w", stderr);  // 将 stderr 重定向到控制台
+        printf("Log is showing here:\n");
+#endif
+
+
+
         // This method is where you should put your application's initialisation code..
 
-        mainWindow.reset (new MainWindow (getApplicationName()));
+        mainWindow.reset(new MainWindow(getApplicationName()));
     }
 
     void shutdown() override
@@ -43,7 +64,7 @@ public:
         quit();
     }
 
-    void anotherInstanceStarted (const juce::String& commandLine) override
+    void anotherInstanceStarted(const juce::String& commandLine) override
     {
         // When another instance of the app is launched while this one is running,
         // this method is invoked, and the commandLine parameter tells you what
@@ -55,26 +76,26 @@ public:
         This class implements the desktop window that contains an instance of
         our MainComponent class.
     */
-    class MainWindow    : public juce::DocumentWindow
+    class MainWindow : public juce::DocumentWindow
     {
     public:
-        MainWindow (juce::String name)
-            : DocumentWindow (name,
-                              juce::Desktop::getInstance().getDefaultLookAndFeel()
-                                                          .findColour (juce::ResizableWindow::backgroundColourId),
-                              DocumentWindow::allButtons)
+        MainWindow(juce::String name)
+            : DocumentWindow(name,
+                juce::Desktop::getInstance().getDefaultLookAndFeel()
+                .findColour(juce::ResizableWindow::backgroundColourId),
+                DocumentWindow::allButtons)
         {
-            setUsingNativeTitleBar (true);
-            setContentOwned (new MainComponent(), true);
+            setUsingNativeTitleBar(true);
+            setContentOwned(new MainComponent(), true);
 
-           #if JUCE_IOS || JUCE_ANDROID
-            setFullScreen (true);
-           #else
-            setResizable (true, true);
-            centreWithSize (getWidth(), getHeight());
-           #endif
+#if JUCE_IOS || JUCE_ANDROID
+            setFullScreen(true);
+#else
+            setResizable(true, true);
+            centreWithSize(getWidth(), getHeight());
+#endif
 
-            setVisible (true);
+            setVisible(true);
         }
 
         void closeButtonPressed() override
@@ -93,7 +114,7 @@ public:
         */
 
     private:
-        JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (MainWindow)
+        JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(MainWindow)
     };
 
 private:
@@ -102,4 +123,4 @@ private:
 
 //==============================================================================
 // This macro generates the main() routine that launches the app.
-START_JUCE_APPLICATION (testApplication)
+START_JUCE_APPLICATION(testApplication)
