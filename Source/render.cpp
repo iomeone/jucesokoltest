@@ -149,7 +149,7 @@ sg_pipeline init_pipeline() {
     pipeline_desc.layout.buffers[0].stride = sizeof(float) * 3; // 顶点位置
     pipeline_desc.layout.buffers[0].step_func = SG_VERTEXSTEP_PER_VERTEX;
 
-    pipeline_desc.layout.buffers[1].stride = sizeof(EcsColor);     // 颜色
+    pipeline_desc.layout.buffers[1].stride = sizeof(EcsRgb) ;     // 颜色
     pipeline_desc.layout.buffers[1].step_func = SG_VERTEXSTEP_PER_INSTANCE; // 每实例步进
 
     pipeline_desc.layout.buffers[2].stride = sizeof(EcsTransform3); // 变换矩阵
@@ -304,7 +304,7 @@ void _sg_initialize(int w, int h)
     // 初始化 SokolCanvas
     SokolCanvas sokol_canvas;
     // 设置背景颜色，您可以根据需要修改
-    sokol_canvas.background_color = { 0.6f, 0.1f, 0.1f }; // 灰色背景
+    sokol_canvas.background_color = { 0.2f, 0.1f, 0.1f }; // 灰色背景
     sokol_canvas.pass_action = init_pass_action(&sokol_canvas);
     sokol_canvas.pip = init_pipeline();
 
@@ -463,7 +463,7 @@ void _sg_initialize(int w, int h)
     // 创建第一个矩形实体
     EcsPosition3 pos1 = { 0.0f, 0.0f, 0.0f };
     EcsRectangle rect1 = { 1.0f, 1.0f };
-    EcsRgb color1 = { 1.0f, 0.0f, 0.0f, 1.0f };
+    EcsRgb color1 = { .4f, 0.0f, 0.0f, 1.0f };
     EcsTransform3 transform1;
     init_transform(transform1, pos1);
 
@@ -479,7 +479,7 @@ void _sg_initialize(int w, int h)
     // 创建第二个矩形实体
     EcsPosition3 pos2 = { .3f, 0.0f, 0.0f }; // 位于x轴正方向2.0的位置
     EcsRectangle rect2 = { 1.0f, 1.0f }; // 宽度和高度为1.0
-    EcsRgb color2 = { 0.0f, 1.0f, 0.0f, 1.0f }; // 绿色
+    EcsRgb color2 = { 0.0f, .4f, 0.0f, 1.0f }; // 绿色
     EcsTransform3 transform2;
     init_transform(transform2, pos2);
 
