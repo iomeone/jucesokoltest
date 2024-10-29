@@ -504,10 +504,22 @@ void _sg_shutdown()
 
 
 
+
+
+ 
+
+
+
 void _sg_render(int w, int h)
 {
     global_width = w;
     global_height = h;
+
+
+
+  
+
+
     world.progress();
 
 }

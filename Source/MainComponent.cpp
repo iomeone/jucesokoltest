@@ -34,10 +34,28 @@ MainComponent::~MainComponent()
 }
 
 //==============================================================================
+
+/*
+Windows:
+set openGLContext.setSwapInterval(0) in void initialise() override; on windows , then fps will be as fast as it can
+
+
+Mac:
+So my simple fix would be comment out the code repaintEvent.wait (-1);
+
+           #if JUCE_MAC
+            if (cvDisplayLinkWrapper != nullptr)
+            {
+           //     repaintEvent.wait (-1);
+                renderFrame();
+            }
+            else
+           #endif
+*/
 void MainComponent::initialise()
 {
     // Initialise GL objects for rendering here.
-
+    openGLContext.setSwapInterval(0);
     _sg_initialize(getWidth(), getHeight());
 
 }
@@ -56,7 +74,10 @@ void MainComponent::render()
 
     _sg_render(getWidth(), getHeight());
 
-
+    if (_fps.incFrameCount())
+    {
+        printf("FPS: %d\n", _fps.fps);
+    }
     // Add your rendering code here...
 }
 
@@ -67,9 +88,13 @@ void MainComponent::paint (juce::Graphics& g)
     // This will draw over the top of the openGL background.
 }
 
+
+ 
 void MainComponent::resized()
 {
     // This is called when the MainComponent is resized.
     // If you add any child components, this is where you should
     // update their positions.
+
+
 }
