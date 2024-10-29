@@ -200,7 +200,7 @@ void init_buffers(flecs::world& ecs) {
     auto b = rect_buf.get_mut<SokolBuffer>();
     ecs_assert(b != nullptr, ECS_INTERNAL_ERROR, NULL);
 
-    mat3 vertices[] = {
+    vec3 vertices[] = {
         {-0.5f, -0.5f, 0.0f},
         { 0.5f, -0.5f, 0.0f},
         { 0.5f,  0.5f, 0.0f},
