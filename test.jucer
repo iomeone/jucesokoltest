@@ -1,9 +1,12 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
 <JUCERPROJECT id="nrviuM" name="test" projectType="guiapp" useAppConfig="0"
-              addUsingNamespaceToJuceHeader="0" jucerFormatVersion="1" cppLanguageStandard="20">
+              addUsingNamespaceToJuceHeader="0" jucerFormatVersion="1" cppLanguageStandard="20"
+              headerPath="../../Source">
   <MAINGROUP id="AEHFTP" name="test">
     <GROUP id="{F4BFA2C5-5F83-85B8-074D-0394FF02F5C5}" name="Source">
+      <FILE id="m43UOz" name="cglm.c" compile="1" resource="0" file="Source/cglm.c"/>
+      <FILE id="W2kEOC" name="cglm.h" compile="0" resource="0" file="Source/cglm.h"/>
       <FILE id="ksMi7G" name="flecs.c" compile="1" resource="0" file="Source/flecs.c"/>
       <FILE id="s2A1Ka" name="flecs.h" compile="0" resource="0" file="Source/flecs.h"/>
       <FILE id="FNArEN" name="render.cpp" compile="1" resource="0" file="Source/render.cpp"/>
