@@ -13,6 +13,7 @@ struct EcsRgb {
     float r;
     float g;
     float b;
+    float a;
 };
 typedef EcsRgb ecs_rgb_t ;
 typedef EcsRgb ecs_rgba_t;
@@ -134,44 +135,57 @@ sg_pipeline init_pipeline() {
 
     sg_shader shd = sg_make_shader(&shader_desc);
 
+  
+
+
+
+
+
     sg_pipeline_desc pipeline_desc = {};
     pipeline_desc.shader = shd;
     pipeline_desc.index_type = SG_INDEXTYPE_UINT16;
 
-    // 设置布局
-    pipeline_desc.layout.buffers[1].stride = 16;
-    pipeline_desc.layout.buffers[1].step_func = SG_VERTEXSTEP_PER_INSTANCE;
-    pipeline_desc.layout.buffers[2].stride = 64;
-    pipeline_desc.layout.buffers[2].step_func = SG_VERTEXSTEP_PER_INSTANCE;
+    // 配置缓冲区布局
+    pipeline_desc.layout.buffers[0].stride = sizeof(float) * 3; // 顶点位置
+    pipeline_desc.layout.buffers[0].step_func = SG_VERTEXSTEP_PER_VERTEX;
 
-    // 设置属性
-    // Static geometry
+    pipeline_desc.layout.buffers[1].stride = sizeof(EcsColor);     // 颜色
+    pipeline_desc.layout.buffers[1].step_func = SG_VERTEXSTEP_PER_INSTANCE; // 每实例步进
+
+    pipeline_desc.layout.buffers[2].stride = sizeof(EcsTransform3); // 变换矩阵
+    pipeline_desc.layout.buffers[2].step_func = SG_VERTEXSTEP_PER_INSTANCE; // 每实例步进
+
+    // 配置顶点属性
+    pipeline_desc.layout.attrs[0].buffer_index = 0;
     pipeline_desc.layout.attrs[0].offset = 0;
-    pipeline_desc.layout.attrs[0].format = SG_VERTEXFORMAT_FLOAT3;
+    pipeline_desc.layout.attrs[0].format = SG_VERTEXFORMAT_FLOAT3; // 顶点位置属性 (vec3)
 
-    // Color buffer (per instance)
     pipeline_desc.layout.attrs[1].buffer_index = 1;
     pipeline_desc.layout.attrs[1].offset = 0;
-    pipeline_desc.layout.attrs[1].format = SG_VERTEXFORMAT_FLOAT4;
+    pipeline_desc.layout.attrs[1].format = SG_VERTEXFORMAT_FLOAT4; // 颜色属性 (vec4)
 
-    // Matrix (per instance)
     pipeline_desc.layout.attrs[2].buffer_index = 2;
     pipeline_desc.layout.attrs[2].offset = 0;
-    pipeline_desc.layout.attrs[2].format = SG_VERTEXFORMAT_FLOAT4;
+    pipeline_desc.layout.attrs[2].format = SG_VERTEXFORMAT_FLOAT4; // 变换矩阵第一行 (vec4)
 
     pipeline_desc.layout.attrs[3].buffer_index = 2;
     pipeline_desc.layout.attrs[3].offset = 16;
-    pipeline_desc.layout.attrs[3].format = SG_VERTEXFORMAT_FLOAT4;
+    pipeline_desc.layout.attrs[3].format = SG_VERTEXFORMAT_FLOAT4; // 变换矩阵第二行 (vec4)
 
     pipeline_desc.layout.attrs[4].buffer_index = 2;
     pipeline_desc.layout.attrs[4].offset = 32;
-    pipeline_desc.layout.attrs[4].format = SG_VERTEXFORMAT_FLOAT4;
+    pipeline_desc.layout.attrs[4].format = SG_VERTEXFORMAT_FLOAT4; // 变换矩阵第三行 (vec4)
 
     pipeline_desc.layout.attrs[5].buffer_index = 2;
     pipeline_desc.layout.attrs[5].offset = 48;
-    pipeline_desc.layout.attrs[5].format = SG_VERTEXFORMAT_FLOAT4;
+    pipeline_desc.layout.attrs[5].format = SG_VERTEXFORMAT_FLOAT4; // 变换矩阵第四行 (vec4)
 
+    // 创建渲染管道
     return sg_make_pipeline(&pipeline_desc);
+
+
+  
+
 }
 
 
