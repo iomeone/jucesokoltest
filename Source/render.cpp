@@ -184,9 +184,29 @@ sg_pipeline init_pipeline() {
     // 创建渲染管道
     return sg_make_pipeline(&pipeline_desc);
 
-
-  
-
+    /*
+    return sg_make_pipeline(&(sg_pipeline_desc) {
+        .shader = shd,
+            .index_type = SG_INDEXTYPE_UINT16,
+            .layout = {
+                .buffers = {
+                    [1] = {.stride = 16, .step_func = SG_VERTEXSTEP_PER_INSTANCE },
+                    [2] = {.stride = 64, .step_func = SG_VERTEXSTEP_PER_INSTANCE }
+                },
+                .attrs = {
+                    // Static geometry 
+                    [0] = {.offset = 0,  .format = SG_VERTEXFORMAT_FLOAT3 },
+                    // Color buffer (per instance) 
+                    [1] = {.buffer_index = 1,  .offset = 0, .format = SG_VERTEXFORMAT_FLOAT4 },
+                    // Matrix (per instance) 
+                    [2] = {.buffer_index = 2,  .offset = 0,  .format = SG_VERTEXFORMAT_FLOAT4 },
+                    [3] = {.buffer_index = 2,  .offset = 16, .format = SG_VERTEXFORMAT_FLOAT4 },
+                    [4] = {.buffer_index = 2,  .offset = 32, .format = SG_VERTEXFORMAT_FLOAT4 },
+                    [5] = {.buffer_index = 2,  .offset = 48, .format = SG_VERTEXFORMAT_FLOAT4 }
+                }
+        }
+    });
+    */
 }
 
 
