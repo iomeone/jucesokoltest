@@ -117,12 +117,13 @@ sg_pipeline init_pipeline() {
     sg_shader_desc shader_desc = {};
     shader_desc.vs.source =
         "#version 330\n"
-        "layout(location=0) in vec4 position;\n"
+        "layout(location=0) in vec3 position;\n"
         "layout(location=1) in vec4 color0;\n"
         "layout(location=2) in mat4 mat;\n"
         "out vec4 color;\n"
         "void main() {\n"
-        "  gl_Position = mat * position;\n"
+        "//  gl_Position = mat * position;\n"
+        " gl_Position = mat * vec4(position, 1.0);\n"
         "  color = color0;\n"
         "}\n";
     shader_desc.fs.source =
