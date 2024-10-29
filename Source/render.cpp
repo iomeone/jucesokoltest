@@ -217,11 +217,43 @@ void init_buffers(flecs::world& ecs) {
 }
 
 
+//#include <sokol_log.h>  // Sokol的日志支持
+
+
+// 自定义日志函数
+void my_log(const char* tag, uint32_t log_level, uint32_t log_item_id,
+    const char* message_or_null, uint32_t line_nr,
+    const char* filename_or_null, void* user_data) {
+
+    // 根据日志级别设置日志级别描述
+    const char* log_level_str = "INFO";
+    if (log_level == 0) log_level_str = "PANIC";
+    else if (log_level == 1) log_level_str = "ERROR";
+    else if (log_level == 2) log_level_str = "WARNING";
+
+    // 打印日志信息到控制台
+    printf("[%s] Level: %s, Item ID: %d, Message: %s, Line: %d, File: %s\n",
+        tag,
+        log_level_str,
+        log_item_id,
+        message_or_null ? message_or_null : "No message",
+        line_nr,
+        filename_or_null ? filename_or_null : "No file");
+}
+
+
+int global_width = 0;
+int global_height = 0;
+
+
 flecs::world world;
 flecs::query<const EcsPosition3, const EcsRectangle, const EcsRgb, const EcsTransform3> rectangle_query;
 
+
 void _sg_initialize(int w, int h) 
 {
+    global_width = w;
+    global_height = h;
     ecs_log_set_level(1);
 
 
@@ -242,16 +274,23 @@ void _sg_initialize(int w, int h)
 
 
 
+    sg_logger logger = {
+          .func = my_log,  // 设置自定义日志函数
+          .user_data = NULL  // 传递自定义用户数据（这里为 NULL）
+    };
+
 
     // **直接在初始化函数中调用 sg_setup**
-    sg_desc desc = {};
+    sg_desc desc = {
+     .logger = logger 
+    };
     sg_setup(&desc);
     assert(sg_isvalid());  // 确保 Sokol 已经初始化
 
     // 初始化 SokolCanvas
     SokolCanvas sokol_canvas;
     // 设置背景颜色，您可以根据需要修改
-    sokol_canvas.background_color = { 0.2f, 0.2f, 0.2f }; // 灰色背景
+    sokol_canvas.background_color = { 0.6f, 0.1f, 0.1f }; // 灰色背景
     sokol_canvas.pass_action = init_pass_action(&sokol_canvas);
     sokol_canvas.pip = init_pipeline();
 
@@ -353,15 +392,15 @@ void _sg_initialize(int w, int h)
 
     world.system<const SokolCanvas>()
         .kind(flecs::OnStore)
-        .each([&](flecs::entity e, const SokolCanvas& canvas) {
+        .each([](flecs::entity e, const SokolCanvas& canvas) {
    
 
         sg_pass pass = {};
  
 
         sg_swapchain swapchain = {};
-        swapchain.width = w;
-        swapchain.height = h;
+        swapchain.width = global_width;
+        swapchain.height = global_width;
 
 
         pass.action = canvas.pass_action;
@@ -439,7 +478,8 @@ void _sg_shutdown()
 
 void _sg_render(int w, int h)
 {
- 
+    global_width = w;
+    global_height = h;
     world.progress();
 
 }
