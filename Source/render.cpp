@@ -180,7 +180,7 @@ sg_pipeline init_pipeline() {
 
 static
 void init_buffers(flecs::world& ecs) {
-    auto rect_buf = ecs.lookup("flecs.systems.sokol.RectangleBuffer");
+    auto rect_buf = ecs.lookup("SokolRectangleBuffer");
     ecs_assert(rect_buf.is_alive(), ECS_INTERNAL_ERROR, NULL);
 
     auto b = rect_buf.get_mut<SokolBuffer>();
@@ -237,30 +237,34 @@ void _sg_initialize(int w, int h)
 
 
 
-    world.system<const EcsCanvas>()
-        .kind(flecs::OnSet)
-        .each([&](flecs::entity e, const EcsCanvas& canvas) {
-
-        sg_desc desc = {};
-        sg_setup(&desc);
-        assert(sg_isvalid());
-
-        SokolCanvas sokol_canvas;
-
-        sokol_canvas.pass_action = init_pass_action(&canvas);
-        sokol_canvas.pip = init_pipeline();
-
-        e.set<SokolCanvas>(sokol_canvas);
-
-        init_buffers(world);
-
-        ecs_trace("sokol initialized");
-    });
-
-
-
     auto SokolRectangleBuffer = world.entity("SokolRectangleBuffer")
         .add<SokolBuffer>();
+
+
+
+
+    // **直接在初始化函数中调用 sg_setup**
+    sg_desc desc = {};
+    sg_setup(&desc);
+    assert(sg_isvalid());  // 确保 Sokol 已经初始化
+
+    // 初始化 SokolCanvas
+    SokolCanvas sokol_canvas;
+    // 设置背景颜色，您可以根据需要修改
+    sokol_canvas.background_color = { 0.2f, 0.2f, 0.2f }; // 灰色背景
+    sokol_canvas.pass_action = init_pass_action(&sokol_canvas);
+    sokol_canvas.pip = init_pipeline();
+
+    // 创建一个带有 EcsCanvas 组件的实体
+    world.entity()
+        .set<EcsCanvas>(sokol_canvas);
+
+    // 初始化缓冲区
+    init_buffers(world);
+
+
+
+
 
 
 
@@ -352,15 +356,15 @@ void _sg_initialize(int w, int h)
         .each([&](flecs::entity e, const SokolCanvas& canvas) {
    
 
-        sg_pass pass;
-        sg_pass_action pass_action = canvas.pass_action;
+        sg_pass pass = {};
+ 
 
-        sg_swapchain swapchain;
+        sg_swapchain swapchain = {};
         swapchain.width = w;
         swapchain.height = h;
 
-        sg_begin_pass(&pass);
-        pass.action = pass_action;
+
+        pass.action = canvas.pass_action;
         pass.swapchain = swapchain;
 
         sg_begin_pass(&pass);
@@ -389,6 +393,32 @@ void _sg_initialize(int w, int h)
             });
 
 
+
+
+
+    auto init_transform = [](EcsTransform3& transform, const EcsPosition3& position) {
+        glm_mat4_identity(transform.value); // 初始化为单位矩阵
+
+
+        vec3 translation = { position.x, position.y, position.z };
+        glm_translate(transform.value, translation);
+
+        };
+
+
+
+    // 创建第一个矩形实体
+    EcsPosition3 pos1 = { 0.0f, 0.0f, 0.0f };
+    EcsRectangle rect1 = { 1.0f, 1.0f };
+    EcsRgb color1 = { 1.0f, 0.0f, 0.0f };
+    EcsTransform3 transform1;
+    init_transform(transform1, pos1);
+
+    world.entity()
+        .set<EcsPosition3>(pos1)
+        .set<EcsRectangle>(rect1)
+        .set<EcsRgb>(color1)
+        .set<EcsTransform3>(transform1);
 
 
 
