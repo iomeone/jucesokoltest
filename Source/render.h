@@ -4,7 +4,7 @@
 extern "C" {
 #endif
 
-	void _sg_initialize();
+	void _sg_initialize(int w, int h);
 
 	void _sg_shutdown();
 
