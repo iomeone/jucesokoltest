@@ -97,12 +97,15 @@ struct SokolBuffer {
     // Number of instances
     int32_t instance_count;
 
+
+    int32_t instance_capacity;
+
     // Number of indices
     int32_t index_count;
 
     // Constructor
     SokolBuffer()
-        : colors(nullptr), transforms(nullptr), instance_count(0), index_count(0) {
+        : colors(nullptr), transforms(nullptr), instance_count(0), instance_capacity(0), index_count(0) {
         vertex_buffer = { 0 };
         index_buffer = { 0 };
         color_buffer = { 0 };
@@ -112,7 +115,16 @@ struct SokolBuffer {
     ~SokolBuffer() {
         ecs_os_free(colors);
         ecs_os_free(transforms);
+
+        if (color_buffer.id != SG_INVALID_ID) {
+            sg_destroy_buffer(color_buffer);
+        }
+        if (transform_buffer.id != SG_INVALID_ID) {
+            sg_destroy_buffer(transform_buffer);
+        }
     }
+
+
 };
 
 
@@ -425,14 +437,41 @@ void SokolAttachRect(flecs::entity e, SokolBuffer& b) {
             return;
     }
 
-    // 分配或重新分配缓冲区
+
+    // 如果需要，重新分配应用层缓冲区
+    if (b.instance_capacity < count) {
+        b.instance_capacity = count * 2; // 增加容量，避免频繁分配
+        b.colors = (ecs_rgba_t*)ecs_os_realloc(b.colors, b.instance_capacity * sizeof(ecs_rgba_t));
+        b.transforms = (mat4*)ecs_os_realloc(b.transforms, b.instance_capacity * sizeof(mat4));
+
+        // 重新创建 GPU 缓冲区
+        if (b.color_buffer.id != SG_INVALID_ID) {
+            sg_destroy_buffer(b.color_buffer);
+        }
+        sg_buffer_desc color_buf_desc = {};
+        color_buf_desc.size = b.instance_capacity * sizeof(ecs_rgba_t);
+        color_buf_desc.usage = SG_USAGE_DYNAMIC;
+        b.color_buffer = sg_make_buffer(&color_buf_desc);
+
+        if (b.transform_buffer.id != SG_INVALID_ID) {
+            sg_destroy_buffer(b.transform_buffer);
+        }
+        sg_buffer_desc transform_buf_desc = {};
+        transform_buf_desc.size = b.instance_capacity * sizeof(mat4);
+        transform_buf_desc.usage = SG_USAGE_DYNAMIC;
+        b.transform_buffer = sg_make_buffer(&transform_buf_desc);
+    }
+
+
+
+    //// 分配或重新分配缓冲区
     size_t colors_size = count * sizeof(ecs_rgba_t);
     size_t transforms_size = count * sizeof(mat4);
 
-    if (b.instance_count < count) {
-        b.colors = (ecs_rgba_t*)ecs_os_realloc(b.colors, colors_size);
-        b.transforms = (mat4*)ecs_os_realloc(b.transforms, transforms_size);
-    }
+    //if (b.instance_count < count) {
+    //    b.colors = (ecs_rgba_t*)ecs_os_realloc(b.colors, colors_size);
+    //    b.transforms = (mat4*)ecs_os_realloc(b.transforms, transforms_size);
+    //}
 
     int32_t cursor = 0;
 
@@ -453,22 +492,22 @@ void SokolAttachRect(flecs::entity e, SokolBuffer& b) {
 
     b.instance_count = count;
 
-    // 创建或更新缓冲区
-    if (b.color_buffer.id == SG_INVALID_ID) {
-        sg_buffer_desc color_buf_desc = {};
-        color_buf_desc.size = colors_size;
-        color_buf_desc.usage = SG_USAGE_STREAM;
+    //// 创建或更新缓冲区
+    //if (b.color_buffer.id == SG_INVALID_ID) {
+    //    sg_buffer_desc color_buf_desc = {};
+    //    color_buf_desc.size = colors_size;
+    //    color_buf_desc.usage = SG_USAGE_STREAM;
 
-        b.color_buffer = sg_make_buffer(&color_buf_desc);
-    }
+    //    b.color_buffer = sg_make_buffer(&color_buf_desc);
+    //}
 
-    if (b.transform_buffer.id == SG_INVALID_ID) {
-        sg_buffer_desc transform_buf_desc = {};
-        transform_buf_desc.size = transforms_size;
-        transform_buf_desc.usage = SG_USAGE_STREAM;
+    //if (b.transform_buffer.id == SG_INVALID_ID) {
+    //    sg_buffer_desc transform_buf_desc = {};
+    //    transform_buf_desc.size = transforms_size;
+    //    transform_buf_desc.usage = SG_USAGE_STREAM;
 
-        b.transform_buffer = sg_make_buffer(&transform_buf_desc);
-    }
+    //    b.transform_buffer = sg_make_buffer(&transform_buf_desc);
+    //}
 
     sg_update_buffer(b.color_buffer, { .ptr = b.colors, .size = colors_size });
     sg_update_buffer(b.transform_buffer, { .ptr = b.transforms, .size = transforms_size });
@@ -495,14 +534,40 @@ void SokolAttachBox(flecs::entity e, SokolBuffer& b) {
         return;
     }
 
+
+
+    // 如果需要，重新分配应用层缓冲区
+    if (b.instance_capacity < count) {
+        b.instance_capacity = count * 2; // 增加容量，避免频繁分配
+        b.colors = (ecs_rgba_t*)ecs_os_realloc(b.colors, b.instance_capacity * sizeof(ecs_rgba_t));
+        b.transforms = (mat4*)ecs_os_realloc(b.transforms, b.instance_capacity * sizeof(mat4));
+
+        // 重新创建 GPU 缓冲区
+        if (b.color_buffer.id != SG_INVALID_ID) {
+            sg_destroy_buffer(b.color_buffer);
+        }
+        sg_buffer_desc color_buf_desc = {};
+        color_buf_desc.size = b.instance_capacity * sizeof(ecs_rgba_t);
+        color_buf_desc.usage = SG_USAGE_DYNAMIC;
+        b.color_buffer = sg_make_buffer(&color_buf_desc);
+
+        if (b.transform_buffer.id != SG_INVALID_ID) {
+            sg_destroy_buffer(b.transform_buffer);
+        }
+        sg_buffer_desc transform_buf_desc = {};
+        transform_buf_desc.size = b.instance_capacity * sizeof(mat4);
+        transform_buf_desc.usage = SG_USAGE_DYNAMIC;
+        b.transform_buffer = sg_make_buffer(&transform_buf_desc);
+    }
+
     // 分配或重新分配缓冲区
     size_t colors_size = count * sizeof(ecs_rgba_t);
     size_t transforms_size = count * sizeof(mat4);
 
-    if (b.instance_count < count) {
-        b.colors = (ecs_rgba_t*)ecs_os_realloc(b.colors, colors_size);
-        b.transforms = (mat4*)ecs_os_realloc(b.transforms, transforms_size);
-    }
+    //if (b.instance_count < count) {
+    //    b.colors = (ecs_rgba_t*)ecs_os_realloc(b.colors, colors_size);
+    //    b.transforms = (mat4*)ecs_os_realloc(b.transforms, transforms_size);
+    //}
 
     int32_t cursor = 0;
 
@@ -524,7 +589,7 @@ void SokolAttachBox(flecs::entity e, SokolBuffer& b) {
     b.instance_count = count;
 
     // 创建或更新缓冲区
-    if (b.color_buffer.id == SG_INVALID_ID) {
+  /*  if (b.color_buffer.id == SG_INVALID_ID) {
         sg_buffer_desc color_buf_desc = {};
         color_buf_desc.size = colors_size;
         color_buf_desc.usage = SG_USAGE_STREAM;
@@ -538,7 +603,7 @@ void SokolAttachBox(flecs::entity e, SokolBuffer& b) {
         transform_buf_desc.usage = SG_USAGE_STREAM;
 
         b.transform_buffer = sg_make_buffer(&transform_buf_desc);
-    }
+    }*/
 
     sg_update_buffer(b.color_buffer, { .ptr = b.colors, .size = colors_size });
     sg_update_buffer(b.transform_buffer, { .ptr = b.transforms, .size = transforms_size });
