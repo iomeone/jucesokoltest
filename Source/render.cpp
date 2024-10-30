@@ -27,6 +27,13 @@ struct EcsPosition3
 };
 
 
+
+struct EcsBox{
+    float width;
+    float height;
+    float depth;
+};
+
 struct EcsCamera
 {
     vec3 position;
@@ -69,6 +76,11 @@ struct SokolCanvas {
 
 typedef SokolCanvas EcsCanvas;
 
+
+
+
+struct RectangleTag {};
+struct BoxTag {};
 
 
 struct SokolBuffer {
@@ -333,7 +345,7 @@ void init_box_buffers(flecs::world& ecs) {
 
     b->index_buffer = sg_make_buffer(&ibuf_desc);
 
-    b->index_count = 6;
+    b->index_count = 36;
 }
 
 
@@ -375,7 +387,178 @@ int global_height = 0;
 
 
 flecs::world world;
+
+
+
 flecs::query<const EcsPosition3, const EcsRectangle, const EcsRgb, const EcsTransform3> rectangle_query;
+
+flecs::query<const EcsPosition3, const EcsBox, const EcsRgb, const EcsTransform3> box_query;
+
+//auto box_query = world.query_builder<const EcsPosition3, const EcsBox, const EcsRgb, const EcsTransform3>()
+//.cached()
+//.build();
+// 在初始化阶段创建查询
+void init_queries(flecs::world& world) {
+    rectangle_query = world.query_builder<const EcsPosition3, const EcsRectangle, const EcsRgb, const EcsTransform3>()
+        .cached()
+        .build();
+    box_query = world.query_builder<const EcsPosition3, const EcsBox, const EcsRgb, const EcsTransform3>()
+        .cached()
+        .build();
+}
+
+
+
+void SokolAttachRect(flecs::entity e, SokolBuffer& b) {
+
+    if (!rectangle_query.changed()) {
+                return;
+    }
+
+    int32_t count = 0;
+    rectangle_query.each([&](flecs::entity, const EcsPosition3&, const EcsRectangle&, const EcsRgb&, const EcsTransform3&) {
+        count++;
+        });
+
+    if (count == 0) {
+        b.instance_count = 0;
+            return;
+    }
+
+    // 分配或重新分配缓冲区
+    size_t colors_size = count * sizeof(ecs_rgba_t);
+    size_t transforms_size = count * sizeof(mat4);
+
+    if (b.instance_count < count) {
+        b.colors = (ecs_rgba_t*)ecs_os_realloc(b.colors, colors_size);
+        b.transforms = (mat4*)ecs_os_realloc(b.transforms, transforms_size);
+    }
+
+    int32_t cursor = 0;
+
+    rectangle_query.each([&](flecs::entity, const EcsPosition3&, const EcsRectangle& rect, const EcsRgb& color,  const EcsTransform3& transform) {
+        // 复制颜色
+        b.colors[cursor] = color;
+
+        // 复制变换矩阵
+        glm_mat4_copy(const_cast<mat4&>(transform.value), b.transforms[cursor]);
+
+
+        // 应用缩放变换
+        vec3 scale = { rect.width, rect.height, 1.0f };
+        glm_scale(b.transforms[cursor], scale);
+
+        cursor++;
+        });
+
+    b.instance_count = count;
+
+    // 创建或更新缓冲区
+    if (b.color_buffer.id == SG_INVALID_ID) {
+        sg_buffer_desc color_buf_desc = {};
+        color_buf_desc.size = colors_size;
+        color_buf_desc.usage = SG_USAGE_STREAM;
+
+        b.color_buffer = sg_make_buffer(&color_buf_desc);
+    }
+
+    if (b.transform_buffer.id == SG_INVALID_ID) {
+        sg_buffer_desc transform_buf_desc = {};
+        transform_buf_desc.size = transforms_size;
+        transform_buf_desc.usage = SG_USAGE_STREAM;
+
+        b.transform_buffer = sg_make_buffer(&transform_buf_desc);
+    }
+
+    sg_update_buffer(b.color_buffer, { .ptr = b.colors, .size = colors_size });
+    sg_update_buffer(b.transform_buffer, { .ptr = b.transforms, .size = transforms_size });
+}
+
+
+
+
+
+void SokolAttachBox(flecs::entity e, SokolBuffer& b) {
+
+
+    if (!box_query.changed()) {
+        return;
+    }
+
+    int32_t count = 0;
+    box_query.each([&](flecs::entity, const EcsPosition3&, const EcsBox&, const EcsRgb&, const EcsTransform3&) {
+        count++;
+        });
+
+    if (count == 0) {
+        b.instance_count = 0;
+        return;
+    }
+
+    // 分配或重新分配缓冲区
+    size_t colors_size = count * sizeof(ecs_rgba_t);
+    size_t transforms_size = count * sizeof(mat4);
+
+    if (b.instance_count < count) {
+        b.colors = (ecs_rgba_t*)ecs_os_realloc(b.colors, colors_size);
+        b.transforms = (mat4*)ecs_os_realloc(b.transforms, transforms_size);
+    }
+
+    int32_t cursor = 0;
+
+    box_query.each([&](flecs::entity, const EcsPosition3&, const EcsBox& box, const EcsRgb& color, const EcsTransform3& transform) {
+        // 复制颜色
+        b.colors[cursor] = color;
+
+        // 复制变换矩阵
+        glm_mat4_copy(const_cast<mat4&>(transform.value), b.transforms[cursor]);
+
+
+        // 应用缩放变换
+        vec3 scale = { box.width, box.height, box.depth };
+        glm_scale(b.transforms[cursor], scale);
+
+        cursor++;
+        });
+
+    b.instance_count = count;
+
+    // 创建或更新缓冲区
+    if (b.color_buffer.id == SG_INVALID_ID) {
+        sg_buffer_desc color_buf_desc = {};
+        color_buf_desc.size = colors_size;
+        color_buf_desc.usage = SG_USAGE_STREAM;
+
+        b.color_buffer = sg_make_buffer(&color_buf_desc);
+    }
+
+    if (b.transform_buffer.id == SG_INVALID_ID) {
+        sg_buffer_desc transform_buf_desc = {};
+        transform_buf_desc.size = transforms_size;
+        transform_buf_desc.usage = SG_USAGE_STREAM;
+
+        b.transform_buffer = sg_make_buffer(&transform_buf_desc);
+    }
+
+    sg_update_buffer(b.color_buffer, { .ptr = b.colors, .size = colors_size });
+    sg_update_buffer(b.transform_buffer, { .ptr = b.transforms, .size = transforms_size });
+
+}
+
+void SokolAttachBuffer(flecs::entity e, SokolBuffer& b) {
+
+    if (e.has<RectangleTag >())
+    {
+        SokolAttachRect(e, b);
+    }
+
+
+    if (e.has<BoxTag  >())
+    {
+        SokolAttachBox(e, b);
+    }
+
+}
 
 
 void _sg_initialize(int w, int h) 
@@ -398,10 +581,12 @@ void _sg_initialize(int w, int h)
 
 
     auto SokolRectangleBuffer = world.entity("SokolRectangleBuffer")
-        .add<SokolBuffer>();
+        .add<SokolBuffer>()
+        .add<RectangleTag>();
 
     auto SokolBoxBuffer = world.entity("SokolBoxBuffer")
-        .add<SokolBuffer>();
+        .add<SokolBuffer>()
+        .add<BoxTag>();
 
     sg_logger logger = {
           .func = my_log,  // 设置自定义日志函数
@@ -457,92 +642,13 @@ void _sg_initialize(int w, int h)
     // 初始化缓冲区
     init_buffers(world);
 
+    init_queries(world);
 
-
-
-
-
-
-
-    rectangle_query = world.query_builder<const EcsPosition3, const EcsRectangle, const EcsRgb, const EcsTransform3>()
-        .cached()
-        .build();
-
-
-
-    // 系统来管理矩形的缓冲区
     world.system<SokolBuffer>()
         .kind(flecs::PostLoad)
-        .each([&](flecs::entity e, SokolBuffer& b) {
-        // 检查查询是否发生变化
-        if (!rectangle_query.changed()) {
-            return;
-        }
-
-        int32_t count = 0;
-        rectangle_query.each([&](flecs::entity, const EcsPosition3&, const EcsRectangle&, const EcsRgb&, const EcsTransform3&) {
-            count++;
+        .each([](flecs::entity e, SokolBuffer& b) {
+              SokolAttachBuffer(e, b);
             });
-
-        if (count == 0) {
-            if (b.instance_count == 0) {
-                // 无需处理
-                return;
-            }
-        }
-
-        // 分配或重新分配缓冲区
-        size_t colors_size = count * sizeof(ecs_rgba_t);
-        size_t transforms_size = count * sizeof(mat4);
-
-        if (b.instance_count < count) {
-            b.colors = (ecs_rgba_t*)ecs_os_realloc(b.colors, colors_size);
-            b.transforms = (mat4*)ecs_os_realloc(b.transforms, transforms_size);
-        }
-
-        int32_t cursor = 0;
-
-        rectangle_query.each([&](flecs::entity, const EcsPosition3&, const EcsRectangle& rect, const EcsRgb& color,  const EcsTransform3& transform) {
-            // 复制颜色
-            b.colors[cursor] = color;
-
-            // 复制变换矩阵
-            glm_mat4_copy(const_cast<mat4&>(transform.value), b.transforms[cursor]);
-
-
-            // 应用缩放变换
-            vec3 scale = { rect.width, rect.height, 1.0f };
-            glm_scale(b.transforms[cursor], scale);
-
-            cursor++;
-            });
-
-        b.instance_count = count;
-
-        // 创建或更新缓冲区
-        if (b.color_buffer.id == SG_INVALID_ID) {
-            sg_buffer_desc color_buf_desc = {};
-            color_buf_desc.size = colors_size;
-            color_buf_desc.usage = SG_USAGE_STREAM;
-
-            b.color_buffer = sg_make_buffer(&color_buf_desc);
-        }
-
-        if (b.transform_buffer.id == SG_INVALID_ID) {
-            sg_buffer_desc transform_buf_desc = {};
-            transform_buf_desc.size = transforms_size;
-            transform_buf_desc.usage = SG_USAGE_STREAM;
-
-            b.transform_buffer = sg_make_buffer(&transform_buf_desc);
-        }
-
-        sg_update_buffer(b.color_buffer, { .ptr = b.colors, .size = colors_size });
-        sg_update_buffer(b.transform_buffer, { .ptr = b.transforms, .size = transforms_size });
-
-           
-      });
-
-
 
 
 
@@ -648,38 +754,56 @@ void _sg_initialize(int w, int h)
 
         };
 
+    if(0)
+    {
 
+   
+        // 创建第一个矩形实体
+        EcsPosition3 pos1 = { 0.0f, 0.f, 0.0f };
+        EcsRectangle rect1 = { 1.0f, 1.0f };
+        EcsRgb color1 = { .5f, 0.0f, 0.0f, 1.0f };
+        EcsTransform3 transform1;
+        init_transform(transform1, pos1);
 
-    // 创建第一个矩形实体
-    EcsPosition3 pos1 = { 0.0f, 0.0f, 0.0f };
-    EcsRectangle rect1 = { 1.0f, 1.0f };
-    EcsRgb color1 = { .4f, 0.0f, 0.0f, 1.0f };
-    EcsTransform3 transform1;
-    init_transform(transform1, pos1);
+        world.entity()
+            .set<EcsPosition3>(pos1)
+            .set<EcsRectangle>(rect1)
+            .set<EcsRgb>(color1)
+            .set<EcsTransform3>(transform1);
+    }
 
-    world.entity()
-        .set<EcsPosition3>(pos1)
-        .set<EcsRectangle>(rect1)
-        .set<EcsRgb>(color1)
-        .set<EcsTransform3>(transform1);
+    if(0)
+    {
+        // 创建第二个矩形实体
+        EcsPosition3 pos2 = { .0f, 0.6f, .0f }; // 位于x轴正方向2.0的位置
+        EcsRectangle rect2 = { 1.0f, 1.0f }; // 宽度和高度为1.0
+        EcsRgb color2 = { 0.0f, .5f, 0.0f, 1.0f }; // 绿色
+        EcsTransform3 transform2;
+        init_transform(transform2, pos2);
 
+        world.entity()
+            .set<EcsPosition3>(pos2)
+            .set<EcsRectangle>(rect2)
+            .set<EcsRgb>(color2)
+            .set<EcsTransform3>(transform2);
 
+    }
 
+    {
+        // 创建第二个矩形实体
+        EcsPosition3 pos2 = { .0f, 0.6f, .0f }; // 位于x轴正方向2.0的位置
+        EcsBox box = { 1.0f, 2.0f , 1.5}; // 宽度和高度为1.0
+        EcsRgb color2 = { 0.0f, .5f, 0.0f, 1.0f }; // 绿色
+        EcsTransform3 transform2;
+        init_transform(transform2, pos2);
 
-    // 创建第二个矩形实体
-    EcsPosition3 pos2 = { .3f, 0.0f, .3f }; // 位于x轴正方向2.0的位置
-    EcsRectangle rect2 = { 1.0f, 1.0f }; // 宽度和高度为1.0
-    EcsRgb color2 = { 0.0f, .2f, 0.0f, 1.0f }; // 绿色
-    EcsTransform3 transform2;
-    init_transform(transform2, pos2);
+        world.entity()
+            .set<EcsPosition3>(pos2)
+            .set<EcsBox>(box)
+            .set<EcsRgb>(color2)
+            .set<EcsTransform3>(transform2);
 
-    //world.entity()
-    //    .set<EcsPosition3>(pos2)
-    //    .set<EcsRectangle>(rect2)
-    //    .set<EcsRgb>(color2)
-    //    .set<EcsTransform3>(transform2);
-
-
+    }
 
 }
 
@@ -718,7 +842,7 @@ void _sg_render(int w, int h)
 
 
     // 设置震动参数
-    float oscillation_amplitude = 1.f; 
+    float oscillation_amplitude = 360.f; 
     float oscillation_speed = 2.0f;     
 
     float new_y = calculateOscillatingY(oscillation_amplitude, oscillation_speed);
@@ -727,14 +851,52 @@ void _sg_render(int w, int h)
     //world.each([&](EcsCamera& camera) {
     //    camera.position[0] = new_y;  
     //    });
-
+    int xx = 0;
 
     world.each([&](flecs::entity e, EcsTransform3& transform) {
-        // 将矩阵重置为单位矩阵
-        glm_mat4_identity(transform.value);
-        // 计算新的位移
-        vec3 translation = { new_y, 0.0f, 0.0f };
-        glm_translate(transform.value, translation);
+      
+        
+
+        if(0)
+        {
+            // 将矩阵重置为单位矩阵
+            glm_mat4_identity(transform.value);
+            // 计算新的位移
+            if (xx % 2 == 0)
+            {
+                vec3 translation = { new_y, 0.0f, 0.0f };
+                glm_translate(transform.value, translation);
+            }
+            if (xx % 2 == 1)
+            {
+                vec3 translation = {  0.0f,new_y, 0.0f };
+                glm_translate(transform.value, translation);
+            }
+        }
+
+
+
+        {
+
+            glm_mat4_identity(transform.value);
+
+            // 旋转角度（以弧度为单位），例如 45 度的旋转
+            float angle = glm_rad(new_y); // new_y 可以控制旋转速度或方向
+
+            // 根据实体的编号来控制不同的旋转轴
+            if (xx % 2 == 0) {
+                vec3 axis = { 1.0f, 0.0f, 0.0f };  // 绕 X 轴旋转
+                glm_rotate(transform.value, angle, axis);
+            }
+            if (xx % 2 == 1) {
+                vec3 axis = { 0.0f, 1.0f, 0.0f };  // 绕 Y 轴旋转
+                glm_rotate(transform.value, angle, axis);
+            }
+
+            xx++;
+        }
+        
+        
         });
 
 
