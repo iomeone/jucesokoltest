@@ -27,6 +27,18 @@ struct EcsPosition3
 };
 
 
+struct EcsCamera
+{
+    vec3 position;
+    vec3 lookat;
+    vec3 up;
+    float fov;
+    float near_;
+    float far_;
+    bool ortho;
+};
+
+
 struct EcsRectangle {
     float width;
     float height;
@@ -51,6 +63,8 @@ struct SokolCanvas {
     sg_pipeline pip;
 
     EcsRgb  background_color;
+
+    flecs::entity camera; // 相机实体
 };
 
 typedef SokolCanvas EcsCanvas;
@@ -115,15 +129,21 @@ sg_pass_action init_pass_action(const EcsCanvas* canvas) {
 static
 sg_pipeline init_pipeline() {
     sg_shader_desc shader_desc = {};
+
+    shader_desc.vs.uniform_blocks[0].size = sizeof(mat4);
+    shader_desc.vs.uniform_blocks[0].uniforms[0].name = "mat_vp";
+    shader_desc.vs.uniform_blocks[0].uniforms[0].type = SG_UNIFORMTYPE_MAT4;
+
+
     shader_desc.vs.source =
         "#version 330\n"
+        "uniform mat4 mat_vp;\n"
         "layout(location=0) in vec3 position;\n"
         "layout(location=1) in vec4 color0;\n"
         "layout(location=2) in mat4 mat;\n"
         "out vec4 color;\n"
         "void main() {\n"
-        "//  gl_Position = mat * position;\n"
-        " gl_Position = mat * vec4(position, 1.0);\n"
+        " gl_Position = mat_vp *mat * vec4(position, 1.0);\n"
         "  color = color0;\n"
         "}\n";
     shader_desc.fs.source =
@@ -180,6 +200,13 @@ sg_pipeline init_pipeline() {
     pipeline_desc.layout.attrs[5].buffer_index = 2;
     pipeline_desc.layout.attrs[5].offset = 48;
     pipeline_desc.layout.attrs[5].format = SG_VERTEXFORMAT_FLOAT4; // 变换矩阵第四行 (vec4)
+
+
+    // 设置深度测试
+    pipeline_desc.depth.compare = SG_COMPAREFUNC_LESS_EQUAL;
+    pipeline_desc.depth.write_enabled = true;
+    //pipeline_desc.depth.pixel_format = SG_PIXELFORMAT_DEPTH;
+
 
     // 创建渲染管道
     return sg_make_pipeline(&pipeline_desc);
@@ -299,7 +326,7 @@ void _sg_initialize(int w, int h)
     world.component<EcsTransform3>();
     world.component<SokolCanvas>();
     world.component<SokolBuffer>();
-
+    world.component<EcsCamera>();
 
 
 
@@ -322,12 +349,39 @@ void _sg_initialize(int w, int h)
     sg_setup(&desc);
     assert(sg_isvalid());  // 确保 Sokol 已经初始化
 
+
+
+
+
+    // 创建相机实体
+    EcsCamera camera = {};
+    vec3 position = { 0.0f, -4.0f, 0.0f };
+    vec3 lookat = { 0.0f, 0.0f, 0.0f };
+    vec3 up = { 0.0f, 1.0f, 0.0f };
+
+    glm_vec3_copy(position, camera.position);
+    glm_vec3_copy(lookat, camera.lookat);
+    glm_vec3_copy(up, camera.up);
+
+
+
+
+    camera.fov = glm_rad(60.0f);
+    camera.near_ = -1.f;
+    camera.far_ = 100.0f;
+    camera.ortho = false;
+
+    auto camera_entity = world.entity()
+        .set<EcsCamera>(camera);
+
+
     // 初始化 SokolCanvas
     SokolCanvas sokol_canvas;
     // 设置背景颜色，您可以根据需要修改
     sokol_canvas.background_color = { 0.2f, 0.1f, 0.1f }; // 灰色背景
     sokol_canvas.pass_action = init_pass_action(&sokol_canvas);
     sokol_canvas.pip = init_pipeline();
+    sokol_canvas.camera = camera_entity;
 
     // 创建一个带有 EcsCanvas 组件的实体
     world.entity()
@@ -430,6 +484,50 @@ void _sg_initialize(int w, int h)
         .each([](flecs::entity e, const SokolCanvas& canvas) {
    
 
+
+
+
+        // 定义矩阵
+        mat4 mat_p, mat_v, mat_vp;
+
+        // 获取相机
+        const EcsCamera* cam = nullptr;
+        if (canvas.camera.is_alive()) {
+            cam = canvas.camera.get<EcsCamera>();
+        }
+
+        // 计算视图和投影矩阵
+        float aspect = (float)global_width / (float)global_height;
+        if (cam) {
+            // 使用相机参数
+            if (cam->ortho) {
+                // 正交投影
+                glm_ortho(-aspect, aspect, -1.0f, 1.0f, cam->near_, cam->far_, mat_p);
+            }
+            else {
+                // 透视投影
+                glm_perspective(cam->fov, aspect, cam->near_, cam->far_, mat_p);
+            }
+            // 视图矩阵
+           
+            glm_lookat((float*)cam->position, (float*)cam->lookat, (float*)cam->up, mat_v);
+
+        }
+        else {
+            // 默认相机参数
+            glm_perspective(glm_rad(30.0f), aspect, 0.1f, 100.0f, mat_p);
+            vec3 eye = { 0.0f, -4.0f, 0.0f };
+            vec3 center = { 0.0f, 0.0f, 5.0f };
+            vec3 up = { 0.0f, 1.0f, 0.0f };
+            glm_lookat(eye, center, up, mat_v);
+        }
+
+        // 计算视图投影矩阵
+        glm_mat4_mul(mat_p, mat_v, mat_vp);
+        
+        //glm_mat4_identity(mat_vp);
+
+
         sg_pass pass = {};
  
 
@@ -445,6 +543,10 @@ void _sg_initialize(int w, int h)
 
 
         sg_apply_pipeline(canvas.pip);
+
+
+        sg_range uniform_data = { .ptr = &mat_vp, .size = sizeof(mat4) };
+        sg_apply_uniforms(SG_SHADERSTAGE_VS, 0, uniform_data);
 
         world.each([&](flecs::entity e, SokolBuffer& buffer) {
             if (buffer.instance_count == 0) {
@@ -500,7 +602,7 @@ void _sg_initialize(int w, int h)
     // 创建第二个矩形实体
     EcsPosition3 pos2 = { .3f, 0.0f, 0.0f }; // 位于x轴正方向2.0的位置
     EcsRectangle rect2 = { 1.0f, 1.0f }; // 宽度和高度为1.0
-    EcsRgb color2 = { 0.0f, .4f, 0.0f, 1.0f }; // 绿色
+    EcsRgb color2 = { 0.0f, .9f, 0.0f, 1.0f }; // 绿色
     EcsTransform3 transform2;
     init_transform(transform2, pos2);
 
