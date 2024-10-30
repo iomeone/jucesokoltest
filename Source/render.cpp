@@ -355,7 +355,7 @@ void _sg_initialize(int w, int h)
 
     // 创建相机实体
     EcsCamera camera = {};
-    vec3 position = { 0.0f, -4.0f, 0.0f };
+    vec3 position = { 0.0f, 0.0f, -5.0f };
     vec3 lookat = { 0.0f, 0.0f, 0.0f };
     vec3 up = { 0.0f, 1.0f, 0.0f };
 
@@ -367,7 +367,7 @@ void _sg_initialize(int w, int h)
 
 
     camera.fov = glm_rad(60.0f);
-    camera.near_ = -1.f;
+    camera.near_ = .1f;
     camera.far_ = 100.0f;
     camera.ortho = false;
 
@@ -600,17 +600,17 @@ void _sg_initialize(int w, int h)
 
 
     // 创建第二个矩形实体
-    EcsPosition3 pos2 = { .3f, 0.0f, 0.0f }; // 位于x轴正方向2.0的位置
+    EcsPosition3 pos2 = { .3f, 0.0f, .3f }; // 位于x轴正方向2.0的位置
     EcsRectangle rect2 = { 1.0f, 1.0f }; // 宽度和高度为1.0
-    EcsRgb color2 = { 0.0f, .9f, 0.0f, 1.0f }; // 绿色
+    EcsRgb color2 = { 0.0f, .2f, 0.0f, 1.0f }; // 绿色
     EcsTransform3 transform2;
     init_transform(transform2, pos2);
 
-    world.entity()
-        .set<EcsPosition3>(pos2)
-        .set<EcsRectangle>(rect2)
-        .set<EcsRgb>(color2)
-        .set<EcsTransform3>(transform2);
+    //world.entity()
+    //    .set<EcsPosition3>(pos2)
+    //    .set<EcsRectangle>(rect2)
+    //    .set<EcsRgb>(color2)
+    //    .set<EcsTransform3>(transform2);
 
 
 
@@ -627,8 +627,18 @@ void _sg_shutdown()
 
 
 
+#include <chrono>
+float calculateOscillatingY(float amplitude, float speed) {
+    // 获取当前时间
+    using clock = std::chrono::high_resolution_clock;
+    static auto start_time = clock::now();
+    auto now = clock::now();
+    float time = std::chrono::duration<float>(now - start_time).count();  // 以秒为单位的时间
 
- 
+    // 使用正弦函数计算 y 轴的震动
+    return sin(time * speed) * amplitude;
+}
+
 
 
 
@@ -639,7 +649,26 @@ void _sg_render(int w, int h)
 
 
 
+
+    // 设置震动参数
+    float oscillation_amplitude = 1.f; 
+    float oscillation_speed = 2.0f;     
+
+    float new_y = calculateOscillatingY(oscillation_amplitude, oscillation_speed);
+
   
+    //world.each([&](EcsCamera& camera) {
+    //    camera.position[0] = new_y;  
+    //    });
+
+
+    world.each([&](flecs::entity e, EcsTransform3& transform) {
+        // 将矩阵重置为单位矩阵
+        glm_mat4_identity(transform.value);
+        // 计算新的位移
+        vec3 translation = { new_y, 0.0f, 0.0f };
+        glm_translate(transform.value, translation);
+        });
 
 
     world.progress();
