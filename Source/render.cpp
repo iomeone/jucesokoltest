@@ -241,7 +241,7 @@ sg_pipeline init_pipeline() {
 
 
 static
-void init_buffers(flecs::world& ecs) {
+void init_rect_buffers(flecs::world& ecs) {
     auto rect_buf = ecs.lookup("SokolRectangleBuffer");
     ecs_assert(rect_buf.is_alive(), ECS_INTERNAL_ERROR, NULL);
 
@@ -278,6 +278,72 @@ void init_buffers(flecs::world& ecs) {
     b->index_count = 6;
 }
 
+
+
+
+
+
+
+
+static
+void init_box_buffers(flecs::world& ecs) {
+    auto box_buf = ecs.lookup("SokolBoxBuffer");
+    ecs_assert(box_buf.is_alive(), ECS_INTERNAL_ERROR, NULL);
+
+    auto b = box_buf.get_mut<SokolBuffer>();
+    ecs_assert(b != nullptr, ECS_INTERNAL_ERROR, NULL);
+
+    vec3 vertices[] = {
+        {-0.5, -0.5, 0.5},
+        { 0.5, -0.5, 0.5},
+        { 0.5,  0.5, 0.5},
+        {-0.5,  0.5, 0.5},
+        { 0.5, -0.5, -0.5},
+        { 0.5,  0.5, -0.5},
+        {-0.5, -0.5, -0.5},
+        {-0.5,  0.5, -0.5}
+    };
+    uint16_t indices[] = {
+        /* Front */
+        0, 1, 2,    0, 2, 3,
+        /* Right */
+        1, 4, 5,    1, 5, 2,
+        /* Left */
+        0, 6, 7,    0, 7, 1,
+        /* Back */
+        6, 4, 5,    6, 5, 7,
+        /* Top */
+        0, 6, 4,    0, 4, 2,
+        /* Bottom */
+        5, 7, 3,    5, 3, 2
+    };
+
+    sg_buffer_desc vbuf_desc = {};
+    vbuf_desc.size = sizeof(vertices);
+    vbuf_desc.data = SG_RANGE(vertices);
+    vbuf_desc.usage = SG_USAGE_IMMUTABLE;
+
+    b->vertex_buffer = sg_make_buffer(&vbuf_desc);
+
+    sg_buffer_desc ibuf_desc = {};
+    ibuf_desc.size = sizeof(indices);
+    ibuf_desc.data = SG_RANGE(indices);
+    ibuf_desc.type = SG_BUFFERTYPE_INDEXBUFFER;
+    ibuf_desc.usage = SG_USAGE_IMMUTABLE;
+
+    b->index_buffer = sg_make_buffer(&ibuf_desc);
+
+    b->index_count = 6;
+}
+
+
+static
+void init_buffers(
+    flecs::world& world)
+{
+    init_rect_buffers(world);
+    init_box_buffers(world);
+}
 
 //#include <sokol_log.h>  // Sokol的日志支持
 
@@ -334,7 +400,8 @@ void _sg_initialize(int w, int h)
     auto SokolRectangleBuffer = world.entity("SokolRectangleBuffer")
         .add<SokolBuffer>();
 
-
+    auto SokolBoxBuffer = world.entity("SokolBoxBuffer")
+        .add<SokolBuffer>();
 
     sg_logger logger = {
           .func = my_log,  // 设置自定义日志函数
