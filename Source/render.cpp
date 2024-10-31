@@ -243,13 +243,13 @@ sg_pipeline init_pipeline() {
     // 设置深度测试
     pipeline_desc.depth.compare = SG_COMPAREFUNC_LESS_EQUAL;
     pipeline_desc.depth.write_enabled = true;
-    //pipeline_desc.depth.pixel_format = SG_PIXELFORMAT_DEPTH;
-
-
-    // 创建渲染管道
+ 
     return sg_make_pipeline(&pipeline_desc);
+}
 
-    /*
+
+
+   /*
     return sg_make_pipeline(&(sg_pipeline_desc) {
         .shader = shd,
             .index_type = SG_INDEXTYPE_UINT16,
@@ -272,9 +272,6 @@ sg_pipeline init_pipeline() {
         }
     });
     */
-}
-
-
 
 static
 void compute_flat_normals(
