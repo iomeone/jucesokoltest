@@ -866,15 +866,15 @@ void SokolAttachBuffer(flecs::entity e, SokolBuffer& b) {
 
 
 static
-void init_uniforms(const SokolCanvas& canvas, vs_uniforms_t vs_out, fs_uniforms_t fs_out, const sokol_render_state_t& state)
+void init_uniforms(const SokolCanvas& canvas, vs_uniforms_t vs_out, fs_uniforms_t fs_out, const sokol_render_state_t* state)
 {
     // 定义矩阵
     mat4 mat_p, mat_v, mat_vp;
 
     // 获取相机
     const EcsCamera* cam = nullptr;
-    if (state.camera.is_alive()) {
-        cam = state.camera.get<EcsCamera>();
+    if (state->camera.is_alive()) {
+        cam = state->camera.get<EcsCamera>();
     }
 
 
@@ -910,25 +910,25 @@ void init_uniforms(const SokolCanvas& canvas, vs_uniforms_t vs_out, fs_uniforms_
 
     const EcsDirectionalLight* light = nullptr;
 
-    if (state.light.is_alive()) {
+    ecs_assert(state->light.is_alive(), ECS_INVALID_PARAMETER, NULL);
 
-        light = state.light.get<EcsDirectionalLight>();
-
-        ecs_assert(light != NULL, ECS_INVALID_PARAMETER, NULL);
-        if (light)
-        {
-            glm_vec3_copy(light->direction, fs_out.light_direction);
-            glm_vec3_copy(light->color, fs_out.light_color);
-        }
-        else
-        {
-            glm_vec3_zero(fs_out.light_direction);
-            glm_vec3_zero(fs_out.light_color);
-        }
-
-
+    light = state->light.get<EcsDirectionalLight>();
+    
+    ecs_assert(light != NULL, ECS_INVALID_PARAMETER, NULL);
+    if (light)
+    {
+        glm_vec3_copy(light->direction, fs_out.light_direction);
+        glm_vec3_copy(light->color, fs_out.light_color);
     }
+    else
+    {
+        glm_vec3_zero(fs_out.light_direction);
+        glm_vec3_zero(fs_out.light_color);
+    }
+
  
+    glm_vec3_copy((float*)&state->ambient_light, fs_out.light_ambient);
+    glm_vec3_copy(cam->position, fs_out.eye_pos);
 
 
  
@@ -1072,9 +1072,9 @@ void _sg_initialize(int w, int h)
 
     world.system<const SokolCanvas>()
         .kind(flecs::OnStore)
-        .each([](flecs::entity e, const SokolCanvas& canvas, const sokol_render_state_t& state) {
+        .each([](flecs::entity e, const SokolCanvas& canvas) {
    
- 
+        const sokol_render_state_t* state = world.get<sokol_render_state_t>();
 
         vs_uniforms_t vs_u;
         fs_uniforms_t fs_u;
@@ -1105,9 +1105,6 @@ void _sg_initialize(int w, int h)
         sg_apply_pipeline(canvas.pip);
 
 
-        sg_range uniform_data = { .ptr = &(vs_u.mat_vp), .size = sizeof(mat4) };
-        sg_apply_uniforms(SG_SHADERSTAGE_VS, 0, uniform_data);
-
         world.each([&](flecs::entity e, SokolBuffer& buffer) {
             if (buffer.instance_count == 0) {
                 return;
@@ -1115,11 +1112,26 @@ void _sg_initialize(int w, int h)
 
             sg_bindings bind = {};
             bind.vertex_buffers[0] = buffer.vertex_buffer;
-            bind.vertex_buffers[1] = buffer.color_buffer;
-            bind.vertex_buffers[2] = buffer.transform_buffer;
+            bind.vertex_buffers[1] = buffer.normal_buffer;
+            bind.vertex_buffers[2] = buffer.color_buffer;
+            bind.vertex_buffers[3] = buffer.transform_buffer;
             bind.index_buffer = buffer.index_buffer;
 
             sg_apply_bindings(&bind);
+
+
+            {
+                sg_range uniform_data = { .ptr = &vs_u, .size = sizeof(vs_uniforms_t) };
+                sg_apply_uniforms(SG_SHADERSTAGE_VS, 0, uniform_data);
+            }
+
+            {
+                sg_range uniform_data = { .ptr = &fs_u, .size = sizeof(fs_u) };
+                sg_apply_uniforms(SG_SHADERSTAGE_FS, 0, uniform_data);
+            }
+
+
+
             sg_draw(0, buffer.index_count, buffer.instance_count);
             });
 
