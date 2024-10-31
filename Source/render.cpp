@@ -143,7 +143,12 @@ struct EcsRectangle {
 
      //const EcsDirectionalLight* light;
      //const EcsCamera* camera;
-
+     sokol_render_state_t()
+     {
+         this->ambient_light.r = 0.4;
+         this->ambient_light.g = 0.4;
+         this->ambient_light.b = 1.0;
+     }
 
      flecs::entity light;
      flecs::entity camera;
@@ -866,10 +871,10 @@ void SokolAttachBuffer(flecs::entity e, SokolBuffer& b) {
 
 
 static
-void init_uniforms(const SokolCanvas& canvas, vs_uniforms_t vs_out, fs_uniforms_t fs_out, const sokol_render_state_t* state)
+void init_uniforms(const SokolCanvas& canvas, vs_uniforms_t& vs_out, fs_uniforms_t& fs_out, const sokol_render_state_t* state)
 {
     // 定义矩阵
-    mat4 mat_p, mat_v, mat_vp;
+    mat4 mat_p, mat_v;
 
     // 获取相机
     const EcsCamera* cam = nullptr;
@@ -907,6 +912,9 @@ void init_uniforms(const SokolCanvas& canvas, vs_uniforms_t vs_out, fs_uniforms_
     // 计算视图投影矩阵
 
     glm_mat4_mul(mat_p, mat_v, vs_out.mat_vp);
+
+    //glm_mat4_identity(vs_out.mat_vp);
+   
 
     const EcsDirectionalLight* light = nullptr;
 
@@ -1085,7 +1093,6 @@ void _sg_initialize(int w, int h)
 
       
         
-        //glm_mat4_identity(mat_vp);
 
 
         sg_pass pass = {};
@@ -1246,7 +1253,7 @@ void _sg_render(int w, int h)
 
     // 设置震动参数
     float oscillation_amplitude = 360.f; 
-    float oscillation_speed = 2.0f;     
+    float oscillation_speed = .1f;     
 
     float new_y = calculateOscillatingY(oscillation_amplitude, oscillation_speed);
 
