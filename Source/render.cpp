@@ -112,9 +112,8 @@ struct SokolBuffer {
         transform_buffer = { 0 };
     }
 
-    ~SokolBuffer() {
-        ecs_os_free(colors);
-        ecs_os_free(transforms);
+    void releaseBuffer()
+    {
 
         if (color_buffer.id != SG_INVALID_ID) {
             sg_destroy_buffer(color_buffer);
@@ -122,6 +121,11 @@ struct SokolBuffer {
         if (transform_buffer.id != SG_INVALID_ID) {
             sg_destroy_buffer(transform_buffer);
         }
+    }
+
+    ~SokolBuffer() {
+        ecs_os_free(colors);
+        ecs_os_free(transforms);
     }
 
 
@@ -261,6 +265,26 @@ sg_pipeline init_pipeline() {
 }
 
 
+
+static
+void compute_flat_normals(
+    vec3* vertices,
+    uint16_t* indices,
+    int32_t count,
+    vec3* normals_out)
+{
+    int32_t v;
+    for (v = 0; v < count; v += 3) {
+        vec3 vec1, vec2, normal;
+        glm_vec3_sub(vertices[indices[v + 0]], vertices[indices[v + 1]], vec1);
+        glm_vec3_sub(vertices[indices[v + 0]], vertices[indices[v + 2]], vec2);
+        glm_vec3_crossn(vec2, vec1, normal);
+
+        glm_vec3_copy(normal, normals_out[indices[v + 0]]);
+        glm_vec3_copy(normal, normals_out[indices[v + 1]]);
+        glm_vec3_copy(normal, normals_out[indices[v + 2]]);
+    }
+}
 
 
 
@@ -876,7 +900,11 @@ void _sg_initialize(int w, int h)
 
 void _sg_shutdown() 
 {
-
+    world.system<SokolBuffer>()
+        .kind(flecs::PostLoad)
+        .each([](flecs::entity e, SokolBuffer& b) {
+                     b.releaseBuffer();
+       });
 }
 
 
