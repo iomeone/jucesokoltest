@@ -59,7 +59,16 @@ struct EcsRectangle {
 
 
 
+ typedef struct vs_uniforms_t {
+     mat4 mat_vp;
+ } vs_uniforms_t;
 
+ typedef struct fs_uniforms_t {
+     vec3 light_ambient;
+     vec3 light_direction;
+     vec3 light_color;
+     vec3 eye_pos;
+ } fs_uniforms_t;
 
 
 
@@ -86,6 +95,7 @@ struct BoxTag {};
 struct SokolBuffer {
     // GPU buffers
     sg_buffer vertex_buffer;        // Geometry (static)
+    sg_buffer normal_buffer;
     sg_buffer index_buffer;         // Indices (static)
     sg_buffer color_buffer;         // Color (per instance)
     sg_buffer transform_buffer;     // Transform (per instance)
@@ -308,20 +318,43 @@ void init_rect_buffers(flecs::world& ecs) {
         0, 2, 3
     };
 
-    sg_buffer_desc vbuf_desc = {};
-    vbuf_desc.size = sizeof(vertices);
-    vbuf_desc.data = SG_RANGE(vertices);
-    vbuf_desc.usage = SG_USAGE_IMMUTABLE;
+    vec3 normals[6];
+    compute_flat_normals(vertices, indices, 6, normals);
 
-    b->vertex_buffer = sg_make_buffer(&vbuf_desc);
 
-    sg_buffer_desc ibuf_desc = {};
-    ibuf_desc.size = sizeof(indices);
-    ibuf_desc.data = SG_RANGE(indices);
-    ibuf_desc.type = SG_BUFFERTYPE_INDEXBUFFER;
-    ibuf_desc.usage = SG_USAGE_IMMUTABLE;
 
-    b->index_buffer = sg_make_buffer(&ibuf_desc);
+    {
+        sg_buffer_desc vbuf_desc = {};
+        vbuf_desc.size = sizeof(vertices);
+        vbuf_desc.data = SG_RANGE(vertices);
+        vbuf_desc.usage = SG_USAGE_IMMUTABLE;
+
+        b->vertex_buffer = sg_make_buffer(&vbuf_desc);
+    }
+
+
+
+    {
+        sg_buffer_desc nbuf_desc = {};
+        nbuf_desc.size = sizeof(indices);
+        nbuf_desc.data = SG_RANGE(indices);
+        nbuf_desc.type = SG_BUFFERTYPE_INDEXBUFFER;
+        nbuf_desc.usage = SG_USAGE_IMMUTABLE;
+
+        b->normal_buffer = sg_make_buffer(&nbuf_desc);
+    }
+
+
+    {
+        sg_buffer_desc ibuf_desc = {};
+        ibuf_desc.size = sizeof(indices);
+        ibuf_desc.data = SG_RANGE(indices);
+        ibuf_desc.type = SG_BUFFERTYPE_INDEXBUFFER;
+        ibuf_desc.usage = SG_USAGE_IMMUTABLE;
+
+        b->index_buffer = sg_make_buffer(&ibuf_desc);
+    }
+
 
     b->index_count = 6;
 }
@@ -341,45 +374,92 @@ void init_box_buffers(flecs::world& ecs) {
     auto b = box_buf.get_mut<SokolBuffer>();
     ecs_assert(b != nullptr, ECS_INTERNAL_ERROR, NULL);
 
+
     vec3 vertices[] = {
-        {-0.5, -0.5, 0.5},
-        { 0.5, -0.5, 0.5},
-        { 0.5,  0.5, 0.5},
-        {-0.5,  0.5, 0.5},
-        { 0.5, -0.5, -0.5},
-        { 0.5,  0.5, -0.5},
-        {-0.5, -0.5, -0.5},
-        {-0.5,  0.5, -0.5}
+       {-0.5f, -0.5f, -0.5f}, // Back   
+       { 0.5f, -0.5f, -0.5f},
+       { 0.5f,  0.5f, -0.5f},
+       {-0.5f,  0.5f, -0.5f},
+
+       {-0.5f, -0.5f,  0.5f}, // Front  
+       { 0.5f, -0.5f,  0.5f},
+       { 0.5f,  0.5f,  0.5f},
+       {-0.5f,  0.5f,  0.5f},
+
+       {-0.5f, -0.5f, -0.5f}, // Left   
+       {-0.5f,  0.5f, -0.5f},
+       {-0.5f,  0.5f,  0.5f},
+       {-0.5f, -0.5f,  0.5f},
+
+       { 0.5f, -0.5f, -0.5f}, // Right   
+       { 0.5f,  0.5f, -0.5f},
+       { 0.5f,  0.5f,  0.5f},
+       { 0.5f, -0.5f,  0.5f},
+
+       {-0.5f, -0.5f, -0.5f}, // Bottom   
+       {-0.5f, -0.5f,  0.5f},
+       { 0.5f, -0.5f,  0.5f},
+       { 0.5f, -0.5f, -0.5f},
+
+       {-0.5f,  0.5f, -0.5f}, // Top   
+       {-0.5f,  0.5f,  0.5f},
+       { 0.5f,  0.5f,  0.5f},
+       { 0.5f,  0.5f, -0.5f},
     };
+
+
+    {
+        sg_buffer_desc vbuf_desc = {};
+        vbuf_desc.size = sizeof(vertices);
+        vbuf_desc.data = SG_RANGE(vertices);
+        vbuf_desc.usage = SG_USAGE_IMMUTABLE;
+
+        b->vertex_buffer = sg_make_buffer(&vbuf_desc);
+    }
+
+
+
+
     uint16_t indices[] = {
-        /* Front */
-        0, 1, 2,    0, 2, 3,
-        /* Right */
-        1, 4, 5,    1, 5, 2,
-        /* Left */
-        0, 6, 7,    0, 7, 1,
-        /* Back */
-        6, 4, 5,    6, 5, 7,
-        /* Top */
-        0, 6, 4,    0, 4, 2,
-        /* Bottom */
-        5, 7, 3,    5, 3, 2
+        0,  1,  2,   0,  2,  3,
+        6,  5,  4,   7,  6,  4,
+        8,  9,  10,  8,  10, 11,
+        14, 13, 12,  15, 14, 12,
+        16, 17, 18,  16, 18, 19,
+        22, 21, 20,  23, 22, 20,
     };
 
-    sg_buffer_desc vbuf_desc = {};
-    vbuf_desc.size = sizeof(vertices);
-    vbuf_desc.data = SG_RANGE(vertices);
-    vbuf_desc.usage = SG_USAGE_IMMUTABLE;
 
-    b->vertex_buffer = sg_make_buffer(&vbuf_desc);
+    {
+        sg_buffer_desc ibuf_desc = {};
+        ibuf_desc.size = sizeof(indices);
+        ibuf_desc.data = SG_RANGE(indices);
+        ibuf_desc.type = SG_BUFFERTYPE_INDEXBUFFER;
+        ibuf_desc.usage = SG_USAGE_IMMUTABLE;
 
-    sg_buffer_desc ibuf_desc = {};
-    ibuf_desc.size = sizeof(indices);
-    ibuf_desc.data = SG_RANGE(indices);
-    ibuf_desc.type = SG_BUFFERTYPE_INDEXBUFFER;
-    ibuf_desc.usage = SG_USAGE_IMMUTABLE;
+        b->index_buffer = sg_make_buffer(&ibuf_desc);
+    }
+ 
 
-    b->index_buffer = sg_make_buffer(&ibuf_desc);
+
+
+    {
+        vec3 normals[24];
+        compute_flat_normals(vertices, indices, 36, normals);
+
+        sg_buffer_desc nbuf_desc = {};
+        nbuf_desc.size = sizeof(normals);
+        nbuf_desc.data = SG_RANGE(normals);
+        nbuf_desc.usage = SG_USAGE_IMMUTABLE;
+
+        b->normal_buffer = sg_make_buffer(&nbuf_desc);
+
+    }
+
+
+
+
+
 
     b->index_count = 36;
 }
