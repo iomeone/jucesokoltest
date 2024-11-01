@@ -314,22 +314,25 @@ sg_pipeline init_pipeline() {
 
     sg_shader_desc shader_desc = {};
 
-    // 顶点着色器的 uniform 块
+    // Vertex shader uniform blocks
     shader_desc.vs.uniform_blocks[0].size = sizeof(vs_uniforms_t);
     shader_desc.vs.uniform_blocks[0].uniforms[0].name = "u_mat_vp";
     shader_desc.vs.uniform_blocks[0].uniforms[0].type = SG_UNIFORMTYPE_MAT4;
 
-    // 片段着色器的 uniform 块
+    // Add second uniform block for materials
+    shader_desc.vs.uniform_blocks[1].size = sizeof(vs_materials_t);
+    shader_desc.vs.uniform_blocks[1].uniforms[0].name = "u_materials";
+    shader_desc.vs.uniform_blocks[1].uniforms[0].type = SG_UNIFORMTYPE_FLOAT3;
+    shader_desc.vs.uniform_blocks[1].uniforms[0].array_count = FS_MAX_MATERIALS;
+
+    // Fragment shader uniform blocks
     shader_desc.fs.uniform_blocks[0].size = sizeof(fs_uniforms_t);
     shader_desc.fs.uniform_blocks[0].uniforms[0].name = "u_light_ambient";
     shader_desc.fs.uniform_blocks[0].uniforms[0].type = SG_UNIFORMTYPE_FLOAT3;
-
     shader_desc.fs.uniform_blocks[0].uniforms[1].name = "u_light_direction";
     shader_desc.fs.uniform_blocks[0].uniforms[1].type = SG_UNIFORMTYPE_FLOAT3;
-
     shader_desc.fs.uniform_blocks[0].uniforms[2].name = "u_light_color";
     shader_desc.fs.uniform_blocks[0].uniforms[2].type = SG_UNIFORMTYPE_FLOAT3;
-
     shader_desc.fs.uniform_blocks[0].uniforms[3].name = "u_eye_pos";
     shader_desc.fs.uniform_blocks[0].uniforms[3].type = SG_UNIFORMTYPE_FLOAT3;
 
