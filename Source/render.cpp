@@ -747,6 +747,7 @@ void init_queries(flecs::world& world) {
     material_query = world.query_builder<const SokolMaterial>()
         .cached()
         .with<SokolMaterial>()
+        .without<Abstract>()
         .build();
 
     //material_query = world.query_builder()
@@ -1318,9 +1319,9 @@ void _sg_initialize(int w, int h)
  
         .each([](flecs::entity e) {
             static uint16_t next_material = 1;
-            ::MessageBoxA(0, e.name().c_str(), 0, 0);
+            //::MessageBoxA(0, e.name().c_str(), 0, 0);
                  e.set<SokolMaterial>({ next_material++ });
-                 ::MessageBoxA(0, e.name().c_str(), 0, 0);
+                 //::MessageBoxA(0, e.name().c_str(), 0, 0);
                  
             });
 
@@ -1367,7 +1368,7 @@ void _sg_initialize(int w, int h)
             .set<EcsRectangle>(rect2)
             .set<EcsRgb>(color2)
             .set<EcsTransform3>(transform2)
-            .add(flecs::ChildOf, shiny_material);
+            .set< SokolMaterial>({ 1 });
 
     }
 
@@ -1385,7 +1386,7 @@ void _sg_initialize(int w, int h)
             .set<EcsBox>(box)
             .set<EcsRgb>(color2)
             .set<EcsTransform3>(transform2)
-            .add(flecs::ChildOf, shiny_material);
+            .set< SokolMaterial>({ 1 });
 
     }
 
