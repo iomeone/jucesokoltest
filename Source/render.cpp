@@ -336,25 +336,31 @@ sg_pipeline init_pipeline() {
     shader_desc.fs.uniform_blocks[0].uniforms[3].name = "u_eye_pos";
     shader_desc.fs.uniform_blocks[0].uniforms[3].type = SG_UNIFORMTYPE_FLOAT3;
 
-    // 顶点着色器源码
+    // Vertex shader code
     shader_desc.vs.source =
         "#version 330\n"
         "uniform mat4 u_mat_vp;\n"
+        "uniform vec3 u_materials[255];\n"
         "layout(location=0) in vec3 v_position;\n"
         "layout(location=1) in vec3 v_normal;\n"
         "layout(location=2) in vec4 i_color;\n"
-        "layout(location=3) in mat4 i_mat_m;\n"
+        "layout(location=3) in float i_material;\n"
+        "layout(location=4) in mat4 i_mat_m;\n"
         "out vec4 position;\n"
         "out vec3 normal;\n"
         "out vec4 color;\n"
+        "out vec3 material;\n"
         "void main() {\n"
         "  gl_Position = u_mat_vp * i_mat_m * vec4(v_position, 1.0);\n"
         "  position = i_mat_m * vec4(v_position, 1.0);\n"
         "  normal = mat3(i_mat_m) * v_normal;\n"
         "  color = i_color;\n"
+       
+        "   uint material_id = uint(i_material);\n"
+        "   material = u_materials[material_id];\n"
         "}\n";
 
-    // 片段着色器源码
+    // Fragment shader code
     shader_desc.fs.source =
         "#version 330\n"
         "uniform vec3 u_light_ambient;\n"
@@ -364,70 +370,82 @@ sg_pipeline init_pipeline() {
         "in vec4 position;\n"
         "in vec3 normal;\n"
         "in vec4 color;\n"
+        "in vec3 material;\n"
         "out vec4 frag_color;\n"
         "void main() {\n"
+        "  float specular_power = material.x;\n"
+        "  float shininess = material.y;\n"
+        "  float emissive = material.z;\n"
         "  vec3 l = normalize(u_light_direction);\n"
         "  vec3 n = normalize(normal);\n"
         "  float dot_n_l = max(dot(n, l), 0.0);\n"
+        "  vec3 v = normalize(u_eye_pos - position.xyz);\n"
+        "  vec3 r = reflect(-l, n);\n"
+        "  float r_dot_v = max(dot(r, v), 0.0);\n"
         "  vec4 ambient = vec4(u_light_ambient, 1.0) * color;\n"
         "  vec4 diffuse = vec4(u_light_color, 1.0) * color * dot_n_l;\n"
-        "  frag_color = ambient + diffuse;\n"
+        "  vec4 specular = vec4(specular_power * pow(r_dot_v, shininess) * dot_n_l * u_light_color, 1.0);\n"
+        "  frag_color = emissive + ambient + diffuse + specular;\n"
         "}\n";
 
     sg_shader shd = sg_make_shader(&shader_desc);
 
-    // 配置渲染管线
+    // Configure rendering pipeline
     sg_pipeline_desc pipeline_desc = {};
     pipeline_desc.shader = shd;
     pipeline_desc.index_type = SG_INDEXTYPE_UINT16;
 
-    // 配置缓冲区布局
-    pipeline_desc.layout.buffers[0].stride = sizeof(float) * 3; // 顶点位置
+    // Configure buffer layouts
+    pipeline_desc.layout.buffers[0].stride = sizeof(float) * 3; // Vertex positions
     pipeline_desc.layout.buffers[0].step_func = SG_VERTEXSTEP_PER_VERTEX;
 
-    pipeline_desc.layout.buffers[1].stride = sizeof(float) * 3; // 法线
+    pipeline_desc.layout.buffers[1].stride = sizeof(float) * 3; // Normals
     pipeline_desc.layout.buffers[1].step_func = SG_VERTEXSTEP_PER_VERTEX;
 
-    pipeline_desc.layout.buffers[2].stride = sizeof(EcsRgb); // 颜色
+    pipeline_desc.layout.buffers[2].stride = sizeof(EcsRgb); // Colors
     pipeline_desc.layout.buffers[2].step_func = SG_VERTEXSTEP_PER_INSTANCE;
 
-    pipeline_desc.layout.buffers[3].stride = sizeof(EcsTransform3); // 变换矩阵
+    pipeline_desc.layout.buffers[3].stride = sizeof(uint32_t); // Material IDs
     pipeline_desc.layout.buffers[3].step_func = SG_VERTEXSTEP_PER_INSTANCE;
 
-    // 配置顶点属性
-    // 顶点位置
-    pipeline_desc.layout.attrs[0].buffer_index = 0;
+    pipeline_desc.layout.buffers[4].stride = sizeof(EcsTransform3); // Transforms
+    pipeline_desc.layout.buffers[4].step_func = SG_VERTEXSTEP_PER_INSTANCE;
+
+    // Configure vertex attributes
+    pipeline_desc.layout.attrs[0].buffer_index = 0; // Position
     pipeline_desc.layout.attrs[0].offset = 0;
     pipeline_desc.layout.attrs[0].format = SG_VERTEXFORMAT_FLOAT3;
 
-    // 法线
-    pipeline_desc.layout.attrs[1].buffer_index = 1;
+    pipeline_desc.layout.attrs[1].buffer_index = 1; // Normal
     pipeline_desc.layout.attrs[1].offset = 0;
     pipeline_desc.layout.attrs[1].format = SG_VERTEXFORMAT_FLOAT3;
 
-    // 颜色
-    pipeline_desc.layout.attrs[2].buffer_index = 2;
+    pipeline_desc.layout.attrs[2].buffer_index = 2; // Color
     pipeline_desc.layout.attrs[2].offset = 0;
     pipeline_desc.layout.attrs[2].format = SG_VERTEXFORMAT_FLOAT4;
 
-    // 变换矩阵的四行
-    pipeline_desc.layout.attrs[3].buffer_index = 3;
+    pipeline_desc.layout.attrs[3].buffer_index = 3; // Material ID
     pipeline_desc.layout.attrs[3].offset = 0;
-    pipeline_desc.layout.attrs[3].format = SG_VERTEXFORMAT_FLOAT4;
+    pipeline_desc.layout.attrs[3].format = SG_VERTEXFORMAT_FLOAT;
 
-    pipeline_desc.layout.attrs[4].buffer_index = 3;
-    pipeline_desc.layout.attrs[4].offset = 16;
+    // Transform matrix attributes
+    pipeline_desc.layout.attrs[4].buffer_index = 4;
+    pipeline_desc.layout.attrs[4].offset = 0;
     pipeline_desc.layout.attrs[4].format = SG_VERTEXFORMAT_FLOAT4;
 
-    pipeline_desc.layout.attrs[5].buffer_index = 3;
-    pipeline_desc.layout.attrs[5].offset = 32;
+    pipeline_desc.layout.attrs[5].buffer_index = 4;
+    pipeline_desc.layout.attrs[5].offset = 16;
     pipeline_desc.layout.attrs[5].format = SG_VERTEXFORMAT_FLOAT4;
 
-    pipeline_desc.layout.attrs[6].buffer_index = 3;
-    pipeline_desc.layout.attrs[6].offset = 48;
+    pipeline_desc.layout.attrs[6].buffer_index = 4;
+    pipeline_desc.layout.attrs[6].offset = 32;
     pipeline_desc.layout.attrs[6].format = SG_VERTEXFORMAT_FLOAT4;
 
-    // 设置深度测试和背面剔除
+    pipeline_desc.layout.attrs[7].buffer_index = 4;
+    pipeline_desc.layout.attrs[7].offset = 48;
+    pipeline_desc.layout.attrs[7].format = SG_VERTEXFORMAT_FLOAT4;
+
+    // Depth test and backface culling
     pipeline_desc.depth.compare = SG_COMPAREFUNC_LESS_EQUAL;
     pipeline_desc.depth.write_enabled = true;
     pipeline_desc.cull_mode = SG_CULLMODE_BACK;
@@ -742,23 +760,40 @@ void SokolAttachRect(flecs::entity e, SokolBuffer& b) {
         b.instance_capacity = count * 2; // 增加容量，避免频繁分配
         b.colors = (ecs_rgba_t*)ecs_os_realloc(b.colors, b.instance_capacity * sizeof(ecs_rgba_t));
         b.transforms = (mat4*)ecs_os_realloc(b.transforms, b.instance_capacity * sizeof(mat4));
+        b.materials = (uint32_t*)ecs_os_realloc(b.materials, b.instance_capacity * sizeof(uint32_t));
 
-        // 重新创建 GPU 缓冲区
-        if (b.color_buffer.id != SG_INVALID_ID) {
-            sg_destroy_buffer(b.color_buffer);
+        {
+            if (b.color_buffer.id != SG_INVALID_ID) {
+                sg_destroy_buffer(b.color_buffer);
+            }
+            sg_buffer_desc color_buf_desc = {};
+            color_buf_desc.size = b.instance_capacity * sizeof(ecs_rgba_t);
+            color_buf_desc.usage = SG_USAGE_DYNAMIC;
+            b.color_buffer = sg_make_buffer(&color_buf_desc);
         }
-        sg_buffer_desc color_buf_desc = {};
-        color_buf_desc.size = b.instance_capacity * sizeof(ecs_rgba_t);
-        color_buf_desc.usage = SG_USAGE_DYNAMIC;
-        b.color_buffer = sg_make_buffer(&color_buf_desc);
 
-        if (b.transform_buffer.id != SG_INVALID_ID) {
-            sg_destroy_buffer(b.transform_buffer);
+        {
+            if (b.transform_buffer.id != SG_INVALID_ID) {
+                sg_destroy_buffer(b.transform_buffer);
+            }
+            sg_buffer_desc transform_buf_desc = {};
+            transform_buf_desc.size = b.instance_capacity * sizeof(mat4);
+            transform_buf_desc.usage = SG_USAGE_DYNAMIC;
+            b.transform_buffer = sg_make_buffer(&transform_buf_desc);
         }
-        sg_buffer_desc transform_buf_desc = {};
-        transform_buf_desc.size = b.instance_capacity * sizeof(mat4);
-        transform_buf_desc.usage = SG_USAGE_DYNAMIC;
-        b.transform_buffer = sg_make_buffer(&transform_buf_desc);
+
+
+        {
+            if (b.material_buffer.id != SG_INVALID_ID) {
+                sg_destroy_buffer(b.material_buffer);
+            }
+            sg_buffer_desc material_buf_desc = {};
+            material_buf_desc.size = b.instance_capacity * sizeof(uint32_t);
+            material_buf_desc.usage = SG_USAGE_DYNAMIC;
+            b.material_buffer = sg_make_buffer(&material_buf_desc);
+
+        }
+
     }
 
 
@@ -766,7 +801,7 @@ void SokolAttachRect(flecs::entity e, SokolBuffer& b) {
     //// 分配或重新分配缓冲区
     size_t colors_size = count * sizeof(ecs_rgba_t);
     size_t transforms_size = count * sizeof(mat4);
-
+    size_t materials_size = count * sizeof(uint32_t);
     //if (b.instance_count < count) {
     //    b.colors = (ecs_rgba_t*)ecs_os_realloc(b.colors, colors_size);
     //    b.transforms = (mat4*)ecs_os_realloc(b.transforms, transforms_size);
@@ -774,7 +809,7 @@ void SokolAttachRect(flecs::entity e, SokolBuffer& b) {
 
     int32_t cursor = 0;
 
-    rectangle_query.each([&](flecs::entity, const EcsPosition3&, const EcsRectangle& rect, const EcsRgb& color,  const EcsTransform3& transform) {
+    rectangle_query.each([&](flecs::entity ent, const EcsPosition3&, const EcsRectangle& rect, const EcsRgb& color,  const EcsTransform3& transform) {
         // 复制颜色
         b.colors[cursor] = color;
 
@@ -785,6 +820,13 @@ void SokolAttachRect(flecs::entity e, SokolBuffer& b) {
         // 应用缩放变换
         vec3 scale = { rect.width, rect.height, 1.0f };
         glm_scale(b.transforms[cursor], scale);
+
+
+
+        // Get material ID
+        const SokolMaterial* mat = ent.get<SokolMaterial>();
+        uint32_t material_id = mat ? mat->material_id : 0;
+        b.materials[cursor] = material_id;
 
         cursor++;
         });
@@ -810,6 +852,7 @@ void SokolAttachRect(flecs::entity e, SokolBuffer& b) {
 
     sg_update_buffer(b.color_buffer, { .ptr = b.colors, .size = colors_size });
     sg_update_buffer(b.transform_buffer, { .ptr = b.transforms, .size = transforms_size });
+    sg_update_buffer(b.material_buffer, { .ptr = b.materials, .size = materials_size });
 }
 
 
@@ -999,6 +1042,29 @@ void init_uniforms(const SokolCanvas& canvas, vs_uniforms_t& vs_out, fs_uniforms
 }
  
  
+void populate_materials(flecs::world& world, vs_materials_t& mat_u) {
+    world.each([&](flecs::entity e, const SokolMaterial& mat) {
+        uint16_t id = mat.material_id;
+
+        const EcsSpecular* spec = e.get<EcsSpecular>();
+        if (spec) {
+            mat_u.array[id].specular_power = spec->specular_power;
+            mat_u.array[id].shininess = spec->shininess;
+        }
+        else {
+            mat_u.array[id].specular_power = 0;
+            mat_u.array[id].shininess = 0;
+        }
+
+        const EcsEmissive* em = e.get<EcsEmissive>();
+        if (em) {
+            mat_u.array[id].emissive = em->value;
+        }
+        else {
+            mat_u.array[id].emissive = 0;
+        }
+        });
+}
 
 
 void _sg_initialize(int w, int h) 
@@ -1161,7 +1227,9 @@ void _sg_initialize(int w, int h)
         init_uniforms(canvas, vs_u, fs_u, state);
 
 
-      
+        vs_materials_t mat_u = {};
+        populate_materials(world, mat_u);
+
         
 
 
@@ -1203,9 +1271,15 @@ void _sg_initialize(int w, int h)
             }
 
             {
+                sg_range uniform_data = { .ptr = &mat_u, .size = sizeof(vs_materials_t) };
+                sg_apply_uniforms(SG_SHADERSTAGE_VS, 1, uniform_data);
+            }
+
+            {
                 sg_range uniform_data = { .ptr = &fs_u, .size = sizeof(fs_u) };
                 sg_apply_uniforms(SG_SHADERSTAGE_FS, 0, uniform_data);
             }
+
 
 
 
