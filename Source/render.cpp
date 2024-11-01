@@ -19,6 +19,24 @@ typedef EcsRgb ecs_rgb_t ;
 typedef EcsRgb ecs_rgba_t;
 
 
+
+struct EcsSpecular {
+    float specular_power;
+    float shininess;
+};
+
+
+struct EcsEmissive {
+    float value;
+};
+
+
+typedef struct SokolMaterial {
+    uint16_t material_id;
+} SokolMaterial;
+
+
+
 struct EcsPosition3
 {
     float x;
@@ -126,6 +144,9 @@ struct EcsRectangle {
 
 
 
+
+
+
  typedef struct vs_uniforms_t {
      mat4 mat_vp;
  } vs_uniforms_t;
@@ -136,6 +157,28 @@ struct EcsRectangle {
      vec3 light_color;
      vec3 eye_pos;
  } fs_uniforms_t;
+
+
+
+
+#define FS_MAX_MATERIALS (255)
+
+ struct vs_material_t {
+     float specular_power;
+     float shininess;
+     float emissive;
+ };
+
+ struct vs_materials_t {
+     vs_material_t array[FS_MAX_MATERIALS];
+ };
+
+
+
+
+
+
+
 
 
  struct sokol_render_state_t {
@@ -192,9 +235,13 @@ struct SokolBuffer {
     sg_buffer color_buffer;         // Color (per instance)
     sg_buffer transform_buffer;     // Transform (per instance)
 
+    sg_buffer material_buffer;      // Material IDs (per instance)
+
+
     // Application-cached buffers
     EcsRgb* colors;
     mat4* transforms;
+    uint32_t* materials;
 
     // Number of instances
     int32_t instance_count;
@@ -207,11 +254,12 @@ struct SokolBuffer {
 
     // Constructor
     SokolBuffer()
-        : colors(nullptr), transforms(nullptr), instance_count(0), instance_capacity(0), index_count(0) {
+        : colors(nullptr), transforms(nullptr), materials(nullptr), instance_count(0), instance_capacity(0), index_count(0) {
         vertex_buffer = { 0 };
         index_buffer = { 0 };
         color_buffer = { 0 };
         transform_buffer = { 0 };
+        material_buffer = { 0 };
     }
 
     void releaseBuffer()
@@ -223,11 +271,20 @@ struct SokolBuffer {
         if (transform_buffer.id != SG_INVALID_ID) {
             sg_destroy_buffer(transform_buffer);
         }
+
+        if (material_buffer.id != SG_INVALID_ID) {
+            sg_destroy_buffer(material_buffer);
+        }
+
     }
 
     ~SokolBuffer() {
+        if(colors)
         ecs_os_free(colors);
+        if(transforms)
         ecs_os_free(transforms);
+        if(materials)
+        ecs_os_free(materials);
     }
 
 
@@ -960,7 +1017,20 @@ void _sg_initialize(int w, int h)
     world.component<SokolCanvas>();
     world.component<SokolBuffer>();
     world.component<EcsCamera>();
+    world.component<EcsSpecular>();
+    world.component<EcsEmissive>();
+    world.component<SokolMaterial>();
 
+
+
+
+    // 创建高光材质实体
+    auto shiny_material = world.entity("ShinyMaterial")
+        .set<EcsSpecular>({ 1.0f, 32.0f });
+
+    // 创建自发光材质实体
+    auto emissive_material = world.entity("EmissiveMaterial")
+        .set<EcsEmissive>({ 1.0f });
 
 
 
@@ -972,6 +1042,7 @@ void _sg_initialize(int w, int h)
         .add<SokolBuffer>()
         .add<BoxTag>();
 
+  
     sg_logger logger = {
           .func = my_log,  // 设置自定义日志函数
           .user_data = NULL  // 传递自定义用户数据（这里为 NULL）
@@ -1148,7 +1219,17 @@ void _sg_initialize(int w, int h)
             });
 
 
+    world.system()
+        .kind(flecs::PostLoad)
+        .expr("!SokolMaterial, (EcsSpecular || EcsEmissive)")
+        .each([](flecs::entity e) {
+            static uint16_t next_material = 1;
+                 e.set<SokolMaterial>({ next_material++ });
+            });
 
+   
+
+ 
 
 
     auto init_transform = [](EcsTransform3& transform, const EcsPosition3& position) {
@@ -1207,7 +1288,8 @@ void _sg_initialize(int w, int h)
             .set<EcsPosition3>(pos2)
             .set<EcsBox>(box)
             .set<EcsRgb>(color2)
-            .set<EcsTransform3>(transform2);
+            .set<EcsTransform3>(transform2)
+            .add(flecs::IsA, shiny_material);
 
     }
 
