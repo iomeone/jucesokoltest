@@ -301,14 +301,10 @@ sg_pass_action init_pass_action(const EcsCanvas* canvas) {
 
     sg_pass_action pass_action = {};
     pass_action.colors[0].load_action = SG_LOADACTION_CLEAR;
-    pass_action.colors[0].clear_value.r = bg_color.r;
-    pass_action.colors[0].clear_value.g = bg_color.g;
-    pass_action.colors[0].clear_value.b = bg_color.b;
-    pass_action.colors[0].clear_value.a = 1.0f;
+
+    pass_action.colors[0].clear_value = { bg_color.r, bg_color.g, bg_color.b, 1.0f };
 
     return pass_action;
-
-
 }
 
  
