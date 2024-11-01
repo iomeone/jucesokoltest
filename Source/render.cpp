@@ -6,7 +6,7 @@
 
 #include "flecs.h"
 #include <cglm.h>
- 
+#include <Windows.h>
 
 
 struct EcsRgb {
@@ -29,6 +29,8 @@ struct EcsSpecular {
 struct EcsEmissive {
     float value;
 };
+
+struct Abstract {};
 
 
 typedef struct SokolMaterial {
@@ -385,7 +387,9 @@ sg_pipeline init_pipeline() {
         "  vec4 ambient = vec4(u_light_ambient, 1.0) * color;\n"
         "  vec4 diffuse = vec4(u_light_color, 1.0) * color * dot_n_l;\n"
         "  vec4 specular = vec4(specular_power * pow(r_dot_v, shininess) * dot_n_l * u_light_color, 1.0);\n"
-        "  frag_color = emissive + ambient + diffuse + specular;\n"
+        "  specular = clamp(specular, 0.0, 1.0);\n"
+        "  frag_color =  emissive + ambient + diffuse + specular;\n"
+        "  frag_color =vec4(specular_power);\n"
         "}\n";
 
     sg_shader shd = sg_make_shader(&shader_desc);
@@ -549,9 +553,9 @@ void init_rect_buffers(flecs::world& ecs) {
 
     {
         sg_buffer_desc nbuf_desc = {};
-        nbuf_desc.size = sizeof(indices);
-        nbuf_desc.data = SG_RANGE(indices);
-        nbuf_desc.type = SG_BUFFERTYPE_INDEXBUFFER;
+        nbuf_desc.size = sizeof(normals);
+        nbuf_desc.data = SG_RANGE(normals);
+        nbuf_desc.type = SG_BUFFERTYPE_VERTEXBUFFER;
         nbuf_desc.usage = SG_USAGE_IMMUTABLE;
 
         b->normal_buffer = sg_make_buffer(&nbuf_desc);
@@ -626,7 +630,7 @@ void init_box_buffers(flecs::world& ecs) {
         vbuf_desc.size = sizeof(vertices);
         vbuf_desc.data = SG_RANGE(vertices);
         vbuf_desc.usage = SG_USAGE_IMMUTABLE;
-
+        vbuf_desc.type = SG_BUFFERTYPE_VERTEXBUFFER;
         b->vertex_buffer = sg_make_buffer(&vbuf_desc);
     }
 
@@ -664,7 +668,7 @@ void init_box_buffers(flecs::world& ecs) {
         nbuf_desc.size = sizeof(normals);
         nbuf_desc.data = SG_RANGE(normals);
         nbuf_desc.usage = SG_USAGE_IMMUTABLE;
-
+        nbuf_desc.type = SG_BUFFERTYPE_VERTEXBUFFER;
         b->normal_buffer = sg_make_buffer(&nbuf_desc);
 
     }
@@ -723,6 +727,10 @@ flecs::query<const EcsPosition3, const EcsRectangle, const EcsRgb, const EcsTran
 
 flecs::query<const EcsPosition3, const EcsBox, const EcsRgb, const EcsTransform3> box_query;
 
+
+
+flecs::query<const SokolMaterial> material_query;
+
 //auto box_query = world.query_builder<const EcsPosition3, const EcsBox, const EcsRgb, const EcsTransform3>()
 //.cached()
 //.build();
@@ -734,6 +742,19 @@ void init_queries(flecs::world& world) {
     box_query = world.query_builder<const EcsPosition3, const EcsBox, const EcsRgb, const EcsTransform3>()
         .cached()
         .build();
+
+
+    material_query = world.query_builder<const SokolMaterial>()
+        .cached()
+        .with<SokolMaterial>()
+        .build();
+
+    //material_query = world.query_builder()
+    //    .cached()
+    //    .with<EcsSpecular>().up(flecs::ChildOf).oper(flecs::Or)
+    //    .with<EcsEmissive>().up(flecs::ChildOf)
+    //    .with<SokolMaterial>().oper(flecs::Not)
+    //    .build();
 }
 
 
@@ -798,32 +819,28 @@ void SokolAttachRect(flecs::entity e, SokolBuffer& b) {
 
 
 
-    //// 分配或重新分配缓冲区
+
     size_t colors_size = count * sizeof(ecs_rgba_t);
     size_t transforms_size = count * sizeof(mat4);
     size_t materials_size = count * sizeof(uint32_t);
-    //if (b.instance_count < count) {
-    //    b.colors = (ecs_rgba_t*)ecs_os_realloc(b.colors, colors_size);
-    //    b.transforms = (mat4*)ecs_os_realloc(b.transforms, transforms_size);
-    //}
+
 
     int32_t cursor = 0;
 
     rectangle_query.each([&](flecs::entity ent, const EcsPosition3&, const EcsRectangle& rect, const EcsRgb& color,  const EcsTransform3& transform) {
-        // 复制颜色
+       
         b.colors[cursor] = color;
 
-        // 复制变换矩阵
+       
         glm_mat4_copy(const_cast<mat4&>(transform.value), b.transforms[cursor]);
 
 
-        // 应用缩放变换
         vec3 scale = { rect.width, rect.height, 1.0f };
         glm_scale(b.transforms[cursor], scale);
 
 
 
-        // Get material ID
+   
         const SokolMaterial* mat = ent.get<SokolMaterial>();
         uint32_t material_id = mat ? mat->material_id : 0;
         b.materials[cursor] = material_id;
@@ -833,22 +850,7 @@ void SokolAttachRect(flecs::entity e, SokolBuffer& b) {
 
     b.instance_count = count;
 
-    //// 创建或更新缓冲区
-    //if (b.color_buffer.id == SG_INVALID_ID) {
-    //    sg_buffer_desc color_buf_desc = {};
-    //    color_buf_desc.size = colors_size;
-    //    color_buf_desc.usage = SG_USAGE_STREAM;
 
-    //    b.color_buffer = sg_make_buffer(&color_buf_desc);
-    //}
-
-    //if (b.transform_buffer.id == SG_INVALID_ID) {
-    //    sg_buffer_desc transform_buf_desc = {};
-    //    transform_buf_desc.size = transforms_size;
-    //    transform_buf_desc.usage = SG_USAGE_STREAM;
-
-    //    b.transform_buffer = sg_make_buffer(&transform_buf_desc);
-    //}
 
     sg_update_buffer(b.color_buffer, { .ptr = b.colors, .size = colors_size });
     sg_update_buffer(b.transform_buffer, { .ptr = b.transforms, .size = transforms_size });
@@ -883,37 +885,52 @@ void SokolAttachBox(flecs::entity e, SokolBuffer& b) {
         b.instance_capacity = count * 2; // 增加容量，避免频繁分配
         b.colors = (ecs_rgba_t*)ecs_os_realloc(b.colors, b.instance_capacity * sizeof(ecs_rgba_t));
         b.transforms = (mat4*)ecs_os_realloc(b.transforms, b.instance_capacity * sizeof(mat4));
+        b.materials = (uint32_t*)ecs_os_realloc(b.materials, b.instance_capacity * sizeof(uint32_t));
+        
 
-        // 重新创建 GPU 缓冲区
-        if (b.color_buffer.id != SG_INVALID_ID) {
-            sg_destroy_buffer(b.color_buffer);
-        }
-        sg_buffer_desc color_buf_desc = {};
-        color_buf_desc.size = b.instance_capacity * sizeof(ecs_rgba_t);
-        color_buf_desc.usage = SG_USAGE_DYNAMIC;
-        b.color_buffer = sg_make_buffer(&color_buf_desc);
 
-        if (b.transform_buffer.id != SG_INVALID_ID) {
-            sg_destroy_buffer(b.transform_buffer);
+        {
+            if (b.color_buffer.id != SG_INVALID_ID) {
+                sg_destroy_buffer(b.color_buffer);
+            }
+            sg_buffer_desc color_buf_desc = {};
+            color_buf_desc.size = b.instance_capacity * sizeof(ecs_rgba_t);
+            color_buf_desc.usage = SG_USAGE_DYNAMIC;
+            b.color_buffer = sg_make_buffer(&color_buf_desc);
         }
-        sg_buffer_desc transform_buf_desc = {};
-        transform_buf_desc.size = b.instance_capacity * sizeof(mat4);
-        transform_buf_desc.usage = SG_USAGE_DYNAMIC;
-        b.transform_buffer = sg_make_buffer(&transform_buf_desc);
+
+        {
+            if (b.transform_buffer.id != SG_INVALID_ID) {
+                sg_destroy_buffer(b.transform_buffer);
+            }
+            sg_buffer_desc transform_buf_desc = {};
+            transform_buf_desc.size = b.instance_capacity * sizeof(mat4);
+            transform_buf_desc.usage = SG_USAGE_DYNAMIC;
+            b.transform_buffer = sg_make_buffer(&transform_buf_desc);
+        }
+
+
+        {
+            if (b.material_buffer.id != SG_INVALID_ID) {
+                sg_destroy_buffer(b.material_buffer);
+            }
+            sg_buffer_desc material_buf_desc = {};
+            material_buf_desc.size = b.instance_capacity * sizeof(uint32_t);
+            material_buf_desc.usage = SG_USAGE_DYNAMIC;
+            b.material_buffer = sg_make_buffer(&material_buf_desc);
+
+        }
     }
 
     // 分配或重新分配缓冲区
     size_t colors_size = count * sizeof(ecs_rgba_t);
     size_t transforms_size = count * sizeof(mat4);
-
-    //if (b.instance_count < count) {
-    //    b.colors = (ecs_rgba_t*)ecs_os_realloc(b.colors, colors_size);
-    //    b.transforms = (mat4*)ecs_os_realloc(b.transforms, transforms_size);
-    //}
+    size_t materials_size = count * sizeof(uint32_t);
+ 
 
     int32_t cursor = 0;
 
-    box_query.each([&](flecs::entity, const EcsPosition3&, const EcsBox& box, const EcsRgb& color, const EcsTransform3& transform) {
+    box_query.each([&](flecs::entity ent, const EcsPosition3&, const EcsBox& box, const EcsRgb& color, const EcsTransform3& transform) {
         // 复制颜色
         b.colors[cursor] = color;
 
@@ -925,30 +942,22 @@ void SokolAttachBox(flecs::entity e, SokolBuffer& b) {
         vec3 scale = { box.width, box.height, box.depth };
         glm_scale(b.transforms[cursor], scale);
 
+
+        // Get material ID
+        const SokolMaterial* mat = ent.get<SokolMaterial>();
+        uint32_t material_id = mat ? mat->material_id : 0;
+        b.materials[cursor] = material_id;
+
         cursor++;
         });
 
     b.instance_count = count;
 
-    // 创建或更新缓冲区
-  /*  if (b.color_buffer.id == SG_INVALID_ID) {
-        sg_buffer_desc color_buf_desc = {};
-        color_buf_desc.size = colors_size;
-        color_buf_desc.usage = SG_USAGE_STREAM;
 
-        b.color_buffer = sg_make_buffer(&color_buf_desc);
-    }
-
-    if (b.transform_buffer.id == SG_INVALID_ID) {
-        sg_buffer_desc transform_buf_desc = {};
-        transform_buf_desc.size = transforms_size;
-        transform_buf_desc.usage = SG_USAGE_STREAM;
-
-        b.transform_buffer = sg_make_buffer(&transform_buf_desc);
-    }*/
 
     sg_update_buffer(b.color_buffer, { .ptr = b.colors, .size = colors_size });
     sg_update_buffer(b.transform_buffer, { .ptr = b.transforms, .size = transforms_size });
+    sg_update_buffer(b.material_buffer, { .ptr = b.materials, .size = materials_size });
 
 }
 
@@ -1043,9 +1052,9 @@ void init_uniforms(const SokolCanvas& canvas, vs_uniforms_t& vs_out, fs_uniforms
  
  
 void populate_materials(flecs::world& world, vs_materials_t& mat_u) {
-    world.each([&](flecs::entity e, const SokolMaterial& mat) {
+    material_query.each([&](flecs::entity e, const SokolMaterial& mat) {
         uint16_t id = mat.material_id;
-
+        ::MessageBoxA(0, e.name().c_str(), 0, 0);
         const EcsSpecular* spec = e.get<EcsSpecular>();
         if (spec) {
             mat_u.array[id].specular_power = spec->specular_power;
@@ -1082,20 +1091,22 @@ void _sg_initialize(int w, int h)
     world.component<SokolCanvas>();
     world.component<SokolBuffer>();
     world.component<EcsCamera>();
-    world.component<EcsSpecular>();
-    world.component<EcsEmissive>();
+    world.component<EcsSpecular>().add(flecs::OnInstantiate, flecs::Inherit);
+    world.component<EcsEmissive>().add(flecs::OnInstantiate, flecs::Inherit);
     world.component<SokolMaterial>();
 
 
 
 
     // 创建高光材质实体
-    auto shiny_material = world.entity("ShinyMaterial")
-        .set<EcsSpecular>({ 1.0f, 32.0f });
+    auto shiny_material = world.entity("SpecularMaterial")
+        .set<EcsSpecular>({ 1.0f, 32.0f }).add< Abstract>();
+      
 
     // 创建自发光材质实体
     auto emissive_material = world.entity("EmissiveMaterial")
-        .set<EcsEmissive>({ 1.0f });
+        .set<EcsEmissive>({ 1.0f }).add< Abstract>();
+       
 
 
 
@@ -1227,10 +1238,13 @@ void _sg_initialize(int w, int h)
         init_uniforms(canvas, vs_u, fs_u, state);
 
 
-        vs_materials_t mat_u = {};
-        populate_materials(world, mat_u);
 
-        
+        static vs_materials_t mat_u = {};
+
+        if (material_query.changed())
+        {
+            populate_materials(world, mat_u);
+        }
 
 
         sg_pass pass = {};
@@ -1259,7 +1273,8 @@ void _sg_initialize(int w, int h)
             bind.vertex_buffers[0] = buffer.vertex_buffer;
             bind.vertex_buffers[1] = buffer.normal_buffer;
             bind.vertex_buffers[2] = buffer.color_buffer;
-            bind.vertex_buffers[3] = buffer.transform_buffer;
+            bind.vertex_buffers[3] = buffer.material_buffer;
+            bind.vertex_buffers[4] = buffer.transform_buffer;
             bind.index_buffer = buffer.index_buffer;
 
             sg_apply_bindings(&bind);
@@ -1294,15 +1309,21 @@ void _sg_initialize(int w, int h)
 
     world.system()
         .kind(flecs::PostLoad)
-        .expr("!SokolMaterial, (EcsSpecular || EcsEmissive)")
+ 
+        .with<EcsSpecular>().oper(flecs::Or)
+        .with<EcsEmissive>()
+   
+        .with<SokolMaterial>().oper(flecs::Not)
+        .with< Abstract>()
+ 
         .each([](flecs::entity e) {
             static uint16_t next_material = 1;
+            ::MessageBoxA(0, e.name().c_str(), 0, 0);
                  e.set<SokolMaterial>({ next_material++ });
+                 ::MessageBoxA(0, e.name().c_str(), 0, 0);
+                 
             });
 
-   
-
- 
 
 
     auto init_transform = [](EcsTransform3& transform, const EcsPosition3& position) {
@@ -1314,13 +1335,13 @@ void _sg_initialize(int w, int h)
 
         };
 
-    if(0)
+    if(1)
     {
 
    
         // 创建第一个矩形实体
-        EcsPosition3 pos1 = { 0.0f, 0.f, 0.0f };
-        EcsRectangle rect1 = { 1.0f, 1.0f };
+        EcsPosition3 pos1 = { -0.5f, 0.f, 0.0f };
+        EcsRectangle rect1 = { .50f, .50f };
         EcsRgb color1 = { .5f, 0.0f, 0.0f, 1.0f };
         EcsTransform3 transform1;
         init_transform(transform1, pos1);
@@ -1332,37 +1353,39 @@ void _sg_initialize(int w, int h)
             .set<EcsTransform3>(transform1);
     }
 
-    if(0)
+    if(1)
     {
         // 创建第二个矩形实体
-        EcsPosition3 pos2 = { .0f, 0.6f, .0f }; // 位于x轴正方向2.0的位置
-        EcsRectangle rect2 = { 1.0f, 1.0f }; // 宽度和高度为1.0
-        EcsRgb color2 = { 0.0f, .5f, 0.0f, 1.0f }; // 绿色
+        EcsPosition3 pos2 = { 1.5f, .0f, .0f }; // 位于x轴正方向2.0的位置
+        EcsRectangle rect2 = { .5f, .5f }; // 宽度和高度为1.0
+        EcsRgb color2 = { 0.0f, .0f, .5f, 1.0f }; // 绿色
         EcsTransform3 transform2;
         init_transform(transform2, pos2);
 
-        world.entity()
+        world.entity("arect")
             .set<EcsPosition3>(pos2)
             .set<EcsRectangle>(rect2)
             .set<EcsRgb>(color2)
-            .set<EcsTransform3>(transform2);
+            .set<EcsTransform3>(transform2)
+            .add(flecs::ChildOf, shiny_material);
 
     }
 
+    if(1)
     {
         // 创建第二个矩形实体
-        EcsPosition3 pos2 = { .0f, 0.6f, .0f }; // 位于x轴正方向2.0的位置
-        EcsBox box = { 1.0f, 2.0f , 1.5}; // 宽度和高度为1.0
-        EcsRgb color2 = { 0.0f, .5f, 0.0f, 1.0f }; // 绿色
+        EcsPosition3 pos2 = { .5f, -1.5f, .0f }; // 位于x轴正方向2.0的位置
+        EcsBox box = { .5f, .5f , .5}; // 宽度和高度为1.0
+        EcsRgb color2 = { 0.5f, .5f, 0.0f, 1.0f }; // 绿色
         EcsTransform3 transform2;
         init_transform(transform2, pos2);
 
-        world.entity()
+        world.entity("abox")
             .set<EcsPosition3>(pos2)
             .set<EcsBox>(box)
             .set<EcsRgb>(color2)
             .set<EcsTransform3>(transform2)
-            .add(flecs::IsA, shiny_material);
+            .add(flecs::ChildOf, shiny_material);
 
     }
 
@@ -1410,6 +1433,10 @@ void _sg_render(int w, int h)
     float oscillation_amplitude = 360.f; 
     float oscillation_speed = .1f;     
 
+
+    //float oscillation_amplitude = .5f;
+    //float oscillation_speed = 1.f;
+
     float new_y = calculateOscillatingY(oscillation_amplitude, oscillation_speed);
 
   
@@ -1440,7 +1467,7 @@ void _sg_render(int w, int h)
         }
 
 
-
+        if(0)
         {
 
             glm_mat4_identity(transform.value);
