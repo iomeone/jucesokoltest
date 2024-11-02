@@ -1431,14 +1431,14 @@ void _sg_initialize(int w, int h)
 
         };
 
-    if(0)
+    if(1)
     {
 
    
         // 创建第一个矩形实体
         EcsPosition3 pos1 = { -0.5f, 0.f, 0.0f };
         EcsRectangle rect1 = { .50f, .50f };
-        EcsRgb color1 = { .5f, 0.0f, 0.0f, 1.0f };
+        EcsRgb color1 = { 1.f, 0.0f, 0.0f, 1.0f };
         EcsTransform3 transform1;
         init_transform(transform1, pos1);
 
@@ -1449,12 +1449,12 @@ void _sg_initialize(int w, int h)
             .set<EcsTransform3>(transform1);
     }
 
-    if(0)
+    if(1)
     {
         // 创建第二个矩形实体
         EcsPosition3 pos2 = { 1.5f, .0f, .0f }; // 位于x轴正方向2.0的位置
         EcsRectangle rect2 = { .5f, .5f }; // 宽度和高度为1.0
-        EcsRgb color2 = { 0.0f, .0f, .5f, 1.0f }; // 绿色
+        EcsRgb color2 = { 0.0f, .0f, 1.f, 1.0f }; // 绿色
         EcsTransform3 transform2;
         init_transform(transform2, pos2);
 
@@ -1473,7 +1473,7 @@ void _sg_initialize(int w, int h)
         // 创建第二个矩形实体
         EcsPosition3 pos2 = { .5f, -1.5f, .0f }; // 位于x轴正方向2.0的位置
         EcsBox box = { .5f, .5f , .5}; // 宽度和高度为1.0
-        EcsRgb color2 = { 0.5f, .5f, 0.0f, 1.0f }; // 绿色
+        EcsRgb color2 = { 1.f, 1.f, 0.0f, 1.0f }; // 绿色
         EcsTransform3 transform2;
         init_transform(transform2, pos2);
 
