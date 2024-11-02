@@ -243,7 +243,7 @@ struct SokolBuffer {
     // Application-cached buffers
     EcsRgb* colors;
     mat4* transforms;
-    uint32_t* materials;
+    float* materials;
 
     // Number of instances
     int32_t instance_count;
@@ -352,6 +352,7 @@ sg_pipeline init_pipeline() {
         "out vec3 normal;\n"
         "out vec4 color;\n"
         "out vec3 material;\n"
+        "out float f_material;\n"
         "void main() {\n"
         "  gl_Position = u_mat_vp * i_mat_m * vec4(v_position, 1.0);\n"
         "  position = i_mat_m * vec4(v_position, 1.0);\n"
@@ -360,6 +361,7 @@ sg_pipeline init_pipeline() {
        
         "   uint material_id = uint(i_material);\n"
         "   material = u_materials[material_id];\n"
+        "   f_material = i_material;\n"
         "}\n";
 
     // Fragment shader code
@@ -373,6 +375,7 @@ sg_pipeline init_pipeline() {
         "in vec3 normal;\n"
         "in vec4 color;\n"
         "in vec3 material;\n"
+        "in float f_material;\n"
         "out vec4 frag_color;\n"
         "void main() {\n"
         "  float specular_power = material.x;\n"
@@ -389,7 +392,7 @@ sg_pipeline init_pipeline() {
         "  vec4 specular = vec4(specular_power * pow(r_dot_v, shininess) * dot_n_l * u_light_color, 1.0);\n"
         "  specular = clamp(specular, 0.0, 1.0);\n"
         "  frag_color =  emissive + ambient + diffuse + specular;\n"
-        "  frag_color =vec4(specular_power);\n"
+        " // frag_color =vec4(specular_power);\n"
         "}\n";
 
     sg_shader shd = sg_make_shader(&shader_desc);
@@ -409,7 +412,7 @@ sg_pipeline init_pipeline() {
     pipeline_desc.layout.buffers[2].stride = sizeof(EcsRgb); // Colors
     pipeline_desc.layout.buffers[2].step_func = SG_VERTEXSTEP_PER_INSTANCE;
 
-    pipeline_desc.layout.buffers[3].stride = sizeof(uint32_t); // Material IDs
+    pipeline_desc.layout.buffers[3].stride = sizeof(float); // Material IDs
     pipeline_desc.layout.buffers[3].step_func = SG_VERTEXSTEP_PER_INSTANCE;
 
     pipeline_desc.layout.buffers[4].stride = sizeof(EcsTransform3); // Transforms
@@ -783,7 +786,7 @@ void SokolAttachRect(flecs::entity e, SokolBuffer& b) {
     if (!rectangle_query.changed()) {
                 return;
     }
-
+    //printf("\n rectangle_query changed \n");
     int32_t count = 0;
     rectangle_query.each([&](flecs::entity, const EcsPosition3&, const EcsRectangle&, const EcsRgb&, const EcsTransform3&) {
         count++;
@@ -800,7 +803,7 @@ void SokolAttachRect(flecs::entity e, SokolBuffer& b) {
         b.instance_capacity = count * 2; // 增加容量，避免频繁分配
         b.colors = (ecs_rgba_t*)ecs_os_realloc(b.colors, b.instance_capacity * sizeof(ecs_rgba_t));
         b.transforms = (mat4*)ecs_os_realloc(b.transforms, b.instance_capacity * sizeof(mat4));
-        b.materials = (uint32_t*)ecs_os_realloc(b.materials, b.instance_capacity * sizeof(uint32_t));
+        b.materials = (float*)ecs_os_realloc(b.materials, b.instance_capacity * sizeof(float));
 
         {
             if (b.color_buffer.id != SG_INVALID_ID) {
@@ -841,7 +844,7 @@ void SokolAttachRect(flecs::entity e, SokolBuffer& b) {
 
     size_t colors_size = count * sizeof(ecs_rgba_t);
     size_t transforms_size = count * sizeof(mat4);
-    size_t materials_size = count * sizeof(uint32_t);
+    size_t materials_size = count * sizeof(float);
 
 
     int32_t cursor = 0;
@@ -903,7 +906,7 @@ void SokolAttachBox(flecs::entity e, SokolBuffer& b) {
     if (!box_query.changed()) {
         return;
     }
-
+    printf("\n box_query changed \n");
     int32_t count = 0;
     box_query.each([&](flecs::entity, const EcsPosition3&, const EcsBox&, const EcsRgb&, const EcsTransform3&) {
         count++;
@@ -921,7 +924,7 @@ void SokolAttachBox(flecs::entity e, SokolBuffer& b) {
         b.instance_capacity = count * 2; // 增加容量，避免频繁分配
         b.colors = (ecs_rgba_t*)ecs_os_realloc(b.colors, b.instance_capacity * sizeof(ecs_rgba_t));
         b.transforms = (mat4*)ecs_os_realloc(b.transforms, b.instance_capacity * sizeof(mat4));
-        b.materials = (uint32_t*)ecs_os_realloc(b.materials, b.instance_capacity * sizeof(uint32_t));
+        b.materials = (float*)ecs_os_realloc(b.materials, b.instance_capacity * sizeof(float));
         
 
 
@@ -961,7 +964,7 @@ void SokolAttachBox(flecs::entity e, SokolBuffer& b) {
     // 分配或重新分配缓冲区
     size_t colors_size = count * sizeof(ecs_rgba_t);
     size_t transforms_size = count * sizeof(mat4);
-    size_t materials_size = count * sizeof(uint32_t);
+    size_t materials_size = count * sizeof(float);
  
 
     int32_t cursor = 0;
@@ -1104,7 +1107,7 @@ void populate_materials(flecs::world& world, vs_materials_t& mat_u) {
     instance_of_material_query.each([&](flecs::entity e) {
         //uint16_t id = mat.material_id;
         //::MessageBoxA(0, e.name().c_str(), "populate_materials", 0);
-
+       
 
         auto HasMaterialentity = world.lookup("HasMaterial");
 
@@ -1118,7 +1121,7 @@ void populate_materials(flecs::world& world, vs_materials_t& mat_u) {
 
                 if (sm)
                 {
-                    ::MessageBoxA(0, material.name().c_str(), "material", 0);
+                    //::MessageBoxA(0, material.name().c_str(), "material", 0);
                     uint16_t id = sm->material_id;
                
 
@@ -1317,6 +1320,7 @@ void _sg_initialize(int w, int h)
 
         if (pure_material_query.changed())
         {
+            printf("\n pure_material_query changed \n");
             pure_material_query.each([](flecs::entity e) {
                 static uint16_t next_material = 1;
                 //::MessageBoxA(0, e.name().c_str(), "set SokolMaterial", 0);
@@ -1332,6 +1336,7 @@ void _sg_initialize(int w, int h)
 
         else if (instance_of_material_query.changed())
         {
+            printf("\n instance_of_material_query changed \n");
             populate_materials(world, mat_u);
         }
 
