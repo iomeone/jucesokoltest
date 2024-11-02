@@ -1542,51 +1542,51 @@ void _sg_render(int w, int h)
     //    });
     int xx = 0;
 
-    world.each([&](flecs::entity e, EcsTransform3& transform) {
-      
-        
+    //world.each([&](flecs::entity e, EcsTransform3& transform) {
+    //  
+    //    
 
-        if(0)
-        {
-            // 将矩阵重置为单位矩阵
-            glm_mat4_identity(transform.value);
-            // 计算新的位移
-            if (xx % 2 == 0)
-            {
-                vec3 translation = { new_y, 0.0f, 0.0f };
-                glm_translate(transform.value, translation);
-            }
-            if (xx % 2 == 1)
-            {
-                vec3 translation = {  0.0f,new_y, 0.0f };
-                glm_translate(transform.value, translation);
-            }
-        }
+    //    if(0)
+    //    {
+    //        // 将矩阵重置为单位矩阵
+    //        glm_mat4_identity(transform.value);
+    //        // 计算新的位移
+    //        if (xx % 2 == 0)
+    //        {
+    //            vec3 translation = { new_y, 0.0f, 0.0f };
+    //            glm_translate(transform.value, translation);
+    //        }
+    //        if (xx % 2 == 1)
+    //        {
+    //            vec3 translation = {  0.0f,new_y, 0.0f };
+    //            glm_translate(transform.value, translation);
+    //        }
+    //    }
 
 
-        if(0)
-        {
+    //    if(0)
+    //    {
 
-            glm_mat4_identity(transform.value);
+    //        glm_mat4_identity(transform.value);
 
-            // 旋转角度（以弧度为单位），例如 45 度的旋转
-            float angle = glm_rad(new_y); // new_y 可以控制旋转速度或方向
+    //        // 旋转角度（以弧度为单位），例如 45 度的旋转
+    //        float angle = glm_rad(new_y); // new_y 可以控制旋转速度或方向
 
-            // 根据实体的编号来控制不同的旋转轴
-            if (xx % 2 == 0) {
-                vec3 axis = { 1.0f, 0.0f, 0.0f };  // 绕 X 轴旋转
-                glm_rotate(transform.value, angle, axis);
-            }
-            if (xx % 2 == 1) {
-                vec3 axis = { 0.0f, 1.0f, 0.0f };  // 绕 Y 轴旋转
-                glm_rotate(transform.value, angle, axis);
-            }
+    //        // 根据实体的编号来控制不同的旋转轴
+    //        if (xx % 2 == 0) {
+    //            vec3 axis = { 1.0f, 0.0f, 0.0f };  // 绕 X 轴旋转
+    //            glm_rotate(transform.value, angle, axis);
+    //        }
+    //        if (xx % 2 == 1) {
+    //            vec3 axis = { 0.0f, 1.0f, 0.0f };  // 绕 Y 轴旋转
+    //            glm_rotate(transform.value, angle, axis);
+    //        }
 
-            xx++;
-        }
-        
-        
-        });
+    //        xx++;
+    //    }
+    //    
+    //    
+    //    });
 
 
     world.progress();
