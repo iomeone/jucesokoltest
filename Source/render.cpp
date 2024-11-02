@@ -1431,7 +1431,7 @@ void _sg_initialize(int w, int h)
 
         };
 
-    if(1)
+    if(0)
     {
 
    
@@ -1449,7 +1449,7 @@ void _sg_initialize(int w, int h)
             .set<EcsTransform3>(transform1);
     }
 
-    if(1)
+    if(0)
     {
         // 创建第二个矩形实体
         EcsPosition3 pos2 = { 1.5f, .0f, .0f }; // 位于x轴正方向2.0的位置
