@@ -30,7 +30,7 @@ struct EcsEmissive {
     float value;
 };
 
-struct Abstract {};
+struct MaterialTag {};
 
 
 typedef struct SokolMaterial {
@@ -729,7 +729,13 @@ flecs::query<const EcsPosition3, const EcsBox, const EcsRgb, const EcsTransform3
 
 
 
-flecs::query<const SokolMaterial> material_query;
+//flecs::query<const SokolMaterial> instance_of_material_query;
+
+flecs::query<> pure_material_query;
+
+flecs::query<> instance_of_material_query;
+
+
 
 //auto box_query = world.query_builder<const EcsPosition3, const EcsBox, const EcsRgb, const EcsTransform3>()
 //.cached()
@@ -744,13 +750,25 @@ void init_queries(flecs::world& world) {
         .build();
 
 
-    material_query = world.query_builder<const SokolMaterial>()
+    auto HasMaterialentity = world.lookup("HasMaterial");
+
+    instance_of_material_query = world.query_builder()
         .cached()
-        .with<SokolMaterial>()
-        .without<Abstract>()
+        .with(HasMaterialentity, flecs::Wildcard)
+        //.without<MaterialTag>()
         .build();
 
-    //material_query = world.query_builder()
+
+    pure_material_query = world.query_builder()
+        .cached()
+        .with<EcsSpecular>().oper(flecs::Or)
+        .with<EcsEmissive>()
+
+        .with<SokolMaterial>().oper(flecs::Not)
+        .with< MaterialTag>()
+        .build();
+
+    //instance_of_material_query = world.query_builder()
     //    .cached()
     //    .with<EcsSpecular>().up(flecs::ChildOf).oper(flecs::Or)
     //    .with<EcsEmissive>().up(flecs::ChildOf)
@@ -841,10 +859,27 @@ void SokolAttachRect(flecs::entity e, SokolBuffer& b) {
 
 
 
-   
-        const SokolMaterial* mat = ent.get<SokolMaterial>();
-        uint32_t material_id = mat ? mat->material_id : 0;
-        b.materials[cursor] = material_id;
+
+
+
+        auto HasMaterialentity = world.lookup("HasMaterial");
+
+        if (HasMaterialentity)
+        {
+            auto material = ent.target(HasMaterialentity);
+            if (material)
+            {
+                const SokolMaterial* sm = material.get<SokolMaterial>();
+                uint32_t material_id = sm ? sm->material_id : 0;
+                b.materials[cursor] = material_id;
+                
+            }
+        }
+
+
+
+
+  
 
         cursor++;
         });
@@ -944,10 +979,23 @@ void SokolAttachBox(flecs::entity e, SokolBuffer& b) {
         glm_scale(b.transforms[cursor], scale);
 
 
-        // Get material ID
-        const SokolMaterial* mat = ent.get<SokolMaterial>();
-        uint32_t material_id = mat ? mat->material_id : 0;
-        b.materials[cursor] = material_id;
+
+
+        auto HasMaterialentity = world.lookup("HasMaterial");
+
+        if (HasMaterialentity)
+        {
+            auto material = ent.target(HasMaterialentity);
+            if (material)
+            {
+                const SokolMaterial* sm = material.get<SokolMaterial>();
+                uint32_t material_id = sm ? sm->material_id : 0;
+                b.materials[cursor] = material_id;
+
+            }
+        }
+
+
 
         cursor++;
         });
@@ -1053,27 +1101,53 @@ void init_uniforms(const SokolCanvas& canvas, vs_uniforms_t& vs_out, fs_uniforms
  
  
 void populate_materials(flecs::world& world, vs_materials_t& mat_u) {
-    material_query.each([&](flecs::entity e, const SokolMaterial& mat) {
-        uint16_t id = mat.material_id;
-        ::MessageBoxA(0, e.name().c_str(), 0, 0);
-        const EcsSpecular* spec = e.get<EcsSpecular>();
-        if (spec) {
-            mat_u.array[id].specular_power = spec->specular_power;
-            mat_u.array[id].shininess = spec->shininess;
-        }
-        else {
-            mat_u.array[id].specular_power = 0;
-            mat_u.array[id].shininess = 0;
-        }
+    instance_of_material_query.each([&](flecs::entity e) {
+        //uint16_t id = mat.material_id;
+        //::MessageBoxA(0, e.name().c_str(), "populate_materials", 0);
 
-        const EcsEmissive* em = e.get<EcsEmissive>();
-        if (em) {
-            mat_u.array[id].emissive = em->value;
+
+        auto HasMaterialentity = world.lookup("HasMaterial");
+
+        if (HasMaterialentity)
+        {
+            auto material = e.target(HasMaterialentity);
+            if (material)
+            {
+               
+                const SokolMaterial *sm = material.get<SokolMaterial>();
+
+                if (sm)
+                {
+                    ::MessageBoxA(0, material.name().c_str(), "material", 0);
+                    uint16_t id = sm->material_id;
+               
+
+                    const EcsSpecular* spec = material.get<EcsSpecular>();
+                    if (spec) {
+                        mat_u.array[id].specular_power = spec->specular_power;
+                        mat_u.array[id].shininess = spec->shininess;
+                    }
+                    else {
+                        mat_u.array[id].specular_power = 0;
+                        mat_u.array[id].shininess = 0;
+                    }
+
+
+                    const EcsEmissive* em = e.get<EcsEmissive>();
+                    if (em) {
+                        mat_u.array[id].emissive = em->value;
+                    }
+                    else {
+                        mat_u.array[id].emissive = 0;
+                    }
+                }
+            }
+
+
+
         }
-        else {
-            mat_u.array[id].emissive = 0;
-        }
-        });
+      
+    });
 }
 
 
@@ -1092,8 +1166,8 @@ void _sg_initialize(int w, int h)
     world.component<SokolCanvas>();
     world.component<SokolBuffer>();
     world.component<EcsCamera>();
-    world.component<EcsSpecular>().add(flecs::OnInstantiate, flecs::Inherit);
-    world.component<EcsEmissive>().add(flecs::OnInstantiate, flecs::Inherit);
+    world.component<EcsSpecular>();// .add(flecs::OnInstantiate, flecs::Inherit);
+    world.component<EcsEmissive>();// .add(flecs::OnInstantiate, flecs::Inherit);
     world.component<SokolMaterial>();
 
 
@@ -1101,15 +1175,15 @@ void _sg_initialize(int w, int h)
 
     // 创建高光材质实体
     auto shiny_material = world.entity("SpecularMaterial")
-        .set<EcsSpecular>({ 1.0f, 32.0f }).add< Abstract>();
+        .set<EcsSpecular>({ 1.0f, 32.0f }).add< MaterialTag>();
       
 
     // 创建自发光材质实体
     auto emissive_material = world.entity("EmissiveMaterial")
-        .set<EcsEmissive>({ 1.0f }).add< Abstract>();
+        .set<EcsEmissive>({ 1.0f }).add< MaterialTag>();
        
 
-
+    auto HasMaterial = world.entity("HasMaterial");
 
     auto SokolRectangleBuffer = world.entity("SokolRectangleBuffer")
         .add<SokolBuffer>()
@@ -1238,11 +1312,25 @@ void _sg_initialize(int w, int h)
 
         init_uniforms(canvas, vs_u, fs_u, state);
 
-
-
         static vs_materials_t mat_u = {};
 
-        if (material_query.changed())
+
+        if (pure_material_query.changed())
+        {
+            pure_material_query.each([](flecs::entity e) {
+                static uint16_t next_material = 1;
+                //::MessageBoxA(0, e.name().c_str(), "set SokolMaterial", 0);
+                e.set(SokolMaterial{ next_material++ });
+                /*                const SokolMaterial* sm = e.get_mut<SokolMaterial>();
+                                auto x = sm->material_id;*/
+                                //::MessageBoxA(0, e.name().c_str(), "set id", 0);
+
+                });
+
+
+        }
+
+        else if (instance_of_material_query.changed())
         {
             populate_materials(world, mat_u);
         }
@@ -1266,40 +1354,40 @@ void _sg_initialize(int w, int h)
 
 
         world.each([&](flecs::entity e, SokolBuffer& buffer) {
-            if (buffer.instance_count == 0) {
-                return;
-            }
+                if (buffer.instance_count == 0) {
+                    return;
+                }
 
-            sg_bindings bind = {};
-            bind.vertex_buffers[0] = buffer.vertex_buffer;
-            bind.vertex_buffers[1] = buffer.normal_buffer;
-            bind.vertex_buffers[2] = buffer.color_buffer;
-            bind.vertex_buffers[3] = buffer.material_buffer;
-            bind.vertex_buffers[4] = buffer.transform_buffer;
-            bind.index_buffer = buffer.index_buffer;
+                sg_bindings bind = {};
+                bind.vertex_buffers[0] = buffer.vertex_buffer;
+                bind.vertex_buffers[1] = buffer.normal_buffer;
+                bind.vertex_buffers[2] = buffer.color_buffer;
+                bind.vertex_buffers[3] = buffer.material_buffer;
+                bind.vertex_buffers[4] = buffer.transform_buffer;
+                bind.index_buffer = buffer.index_buffer;
 
-            sg_apply_bindings(&bind);
-
-
-            {
-                sg_range uniform_data = { .ptr = &vs_u, .size = sizeof(vs_uniforms_t) };
-                sg_apply_uniforms(SG_SHADERSTAGE_VS, 0, uniform_data);
-            }
-
-            {
-                sg_range uniform_data = { .ptr = &mat_u, .size = sizeof(vs_materials_t) };
-                sg_apply_uniforms(SG_SHADERSTAGE_VS, 1, uniform_data);
-            }
-
-            {
-                sg_range uniform_data = { .ptr = &fs_u, .size = sizeof(fs_u) };
-                sg_apply_uniforms(SG_SHADERSTAGE_FS, 0, uniform_data);
-            }
+                sg_apply_bindings(&bind);
 
 
+                {
+                    sg_range uniform_data = { .ptr = &vs_u, .size = sizeof(vs_uniforms_t) };
+                    sg_apply_uniforms(SG_SHADERSTAGE_VS, 0, uniform_data);
+                }
+
+                {
+                    sg_range uniform_data = { .ptr = &mat_u, .size = sizeof(vs_materials_t) };
+                    sg_apply_uniforms(SG_SHADERSTAGE_VS, 1, uniform_data);
+                }
+
+                {
+                    sg_range uniform_data = { .ptr = &fs_u, .size = sizeof(fs_u) };
+                    sg_apply_uniforms(SG_SHADERSTAGE_FS, 0, uniform_data);
+                }
 
 
-            sg_draw(0, buffer.index_count, buffer.instance_count);
+
+
+                sg_draw(0, buffer.index_count, buffer.instance_count);
             });
 
         sg_end_pass();
@@ -1308,22 +1396,24 @@ void _sg_initialize(int w, int h)
             });
 
 
-    world.system()
-        .kind(flecs::PostLoad)
- 
-        .with<EcsSpecular>().oper(flecs::Or)
-        .with<EcsEmissive>()
-   
-        .with<SokolMaterial>().oper(flecs::Not)
-        .with< Abstract>()
- 
-        .each([](flecs::entity e) {
-            static uint16_t next_material = 1;
-            //::MessageBoxA(0, e.name().c_str(), 0, 0);
-                 e.set<SokolMaterial>({ next_material++ });
-                 //::MessageBoxA(0, e.name().c_str(), 0, 0);
-                 
-            });
+ //   world.system()
+ //       .kind(flecs::PostLoad)
+ //
+ //       .with<EcsSpecular>().oper(flecs::Or)
+ //       .with<EcsEmissive>()
+ //  
+ //       .with<SokolMaterial>().oper(flecs::Not)
+ //       .with< MaterialTag>()
+ //
+ //       .each([](flecs::entity e) {
+ //           static uint16_t next_material = 1;
+ //           ::MessageBoxA(0, e.name().c_str(), "set SokolMaterial", 0);
+ //                e.set(SokolMaterial{ next_material++ });
+ ///*                const SokolMaterial* sm = e.get_mut<SokolMaterial>();
+ //                auto x = sm->material_id;*/
+ //                //::MessageBoxA(0, e.name().c_str(), "set id", 0);
+ //                
+ //           });
 
 
 
@@ -1368,7 +1458,8 @@ void _sg_initialize(int w, int h)
             .set<EcsRectangle>(rect2)
             .set<EcsRgb>(color2)
             .set<EcsTransform3>(transform2)
-            .set< SokolMaterial>({ 1 });
+            .add(HasMaterial, shiny_material);
+         
 
     }
 
@@ -1386,7 +1477,7 @@ void _sg_initialize(int w, int h)
             .set<EcsBox>(box)
             .set<EcsRgb>(color2)
             .set<EcsTransform3>(transform2)
-            .set< SokolMaterial>({ 1 });
+            .add(HasMaterial, shiny_material);
 
     }
 
