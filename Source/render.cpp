@@ -6,7 +6,160 @@
 
 #include "flecs.h"
 #include <cglm.h>
+#include <string>
+#include <sstream>
+#ifdef JUCE_WINDOWS
+
 #include <Windows.h>
+#endif // JUCE_WINDOWS
+
+
+
+
+
+#define SOKOL_MAX_EFFECT_INPUTS (8)
+#define SOKOL_MAX_EFFECT_PASS (8)
+#define SOKOL_MAX_EFFECT_PARAMS (32)
+
+typedef struct sokol_pass_input_t {
+    const char* name;
+    int id;
+} sokol_pass_input_t;
+
+
+
+
+typedef struct sokol_pass_desc_t {
+    int32_t width;
+    int32_t height;
+    const char* shader;
+    sg_pixel_format color_format;
+    sokol_pass_input_t inputs[SOKOL_MAX_EFFECT_INPUTS];
+} sokol_pass_desc_t;
+
+
+
+
+
+
+typedef struct sokol_offscreen_pass_t {
+    sg_pass_action pass_action;
+    sg_attachments attachment;
+    sg_pipeline pip;
+    sg_image depth_target;
+    sg_image color_target;
+
+    sg_sampler smp;
+} sokol_offscreen_pass_t;
+
+
+typedef struct sokol_pass_t {
+    sokol_offscreen_pass_t offscreen_pass;
+    int32_t input_count;
+    int32_t param_count;
+    int32_t inputs[SOKOL_MAX_EFFECT_INPUTS];
+    float params[SOKOL_MAX_EFFECT_PARAMS];
+    int32_t width;
+    int32_t height;
+} sokol_fx_pass_t;
+
+
+
+
+
+
+typedef struct SokolEffect {
+    sokol_pass_t pass[SOKOL_MAX_EFFECT_PASS];
+    int32_t pass_count;
+} SokolEffect;
+
+
+
+const char* shd_threshold = R"(
+    #version 330 core
+    uniform sampler2D tex;
+    out vec4 frag_color;
+    in vec2 uv;
+    void main() {
+        float thresh = 1.0;
+        vec4 c = texture(tex, uv);
+        c.r = max(c.r - thresh, 0);
+        c.g = max(c.g - thresh, 0);
+        c.b = max(c.b - thresh, 0);
+        frag_color = c;
+    }
+)";
+
+
+const char* shd_h_blur = R"(
+    #version 330 core
+    uniform sampler2D tex;
+    out vec4 frag_color;
+    in vec2 uv;
+    void main() {
+        float kernel = 50.0;
+        vec4 sum = vec4(0.0);
+        float width = 800;
+        float height = 600;
+        float x = uv.x;
+        float y = uv.y;
+        float i, g;
+
+        kernel = kernel / width;
+        kernel = kernel / (width / height);
+        for(i = -kernel; i <= kernel; i += 1.0 / width) {
+            g = i / kernel;
+            g *= g;
+            sum += texture(tex, vec2(x + i, y)) * exp(-(g) * 5);
+        }
+        frag_color = sum / 20;
+    }
+)";
+
+
+
+
+const char* shd_v_blur = R"(
+    #version 330 core
+    uniform sampler2D tex;
+    out vec4 frag_color;
+    in vec2 uv;
+    void main() {
+        float kernel = 50.0;
+        vec4 sum = vec4(0.0);
+        float width = 800;
+        float height = 600;
+        float x = uv.x;
+        float y = uv.y;
+        float i, g;
+
+        kernel = kernel / width;
+        for(i = -kernel; i <= kernel; i += 1.0 / width) {
+            g = i / kernel;
+            g *= g;
+            sum += texture(tex, vec2(x, y + i)) * exp(-(g) * 5);
+        }
+        frag_color = sum / 20;
+    }
+)";
+
+
+// 混合着色器
+const char* shd_blend = R"(
+    #version 330 core
+    uniform sampler2D tex0;
+    uniform sampler2D tex1;
+    out vec4 frag_color;
+    in vec2 uv;
+    void main() {
+        frag_color = texture(tex0, uv) + texture(tex1, uv);
+    }
+)";
+
+
+
+
+
 
 
 struct EcsRgb {
@@ -217,7 +370,18 @@ struct SokolCanvas {
 
     EcsRgb  background_color;
 
-     // 相机实体
+    
+
+    sg_image offscreen_tex;
+    sg_image offscreen_depth_tex;
+    //sg_pass offscreen_pass;
+    sg_pass_action tex_pass_action;
+    sg_buffer offscreen_quad;
+
+    SokolEffect fx_bloom;
+
+    sg_pipeline tex_pip;
+
 };
 
 typedef SokolCanvas EcsCanvas;
@@ -295,6 +459,266 @@ struct SokolBuffer {
 
 
 
+std::string build_fs_shader(const sokol_pass_desc_t& pass) {
+    std::ostringstream fs_shader;
+
+    fs_shader << "#version 330\n"
+        << "out vec4 frag_color;\n"
+        << "in vec2 uv;\n";
+
+    int i = 0;
+    while (pass.inputs[i].name != nullptr) {
+        fs_shader << "uniform sampler2D " << pass.inputs[i].name << ";\n";
+        i++;
+    }
+
+    fs_shader << "void main() {\n";
+    fs_shader << pass.shader << "\n";
+    fs_shader << "}\n";
+
+    return fs_shader.str();
+}
+
+
+
+
+const char* vs_fx_shader =
+"#version 330\n"
+"layout(location=0) in vec4 v_position;\n"
+"layout(location=1) in vec2 v_uv;\n"
+"out vec2 uv;\n"
+"void main() {\n"
+"  gl_Position = v_position;\n"
+"  uv = v_uv;\n"
+"}\n";
+
+int sokol_effect_add_pass(
+    SokolEffect* fx,
+    sokol_pass_desc_t pass_desc)
+{
+    sokol_pass_t* pass = &fx->pass[fx->pass_count++];
+
+    const char* fs_shader = build_fs_shader(pass_desc).c_str();
+
+    /* 创建着色器 */
+    sg_shader_desc shd_desc = {};
+    shd_desc.vs.source = vs_fx_shader;
+    shd_desc.fs.source = fs_shader;
+
+    sokol_pass_input_t* input;
+    int i = 0;
+    while (true) {
+        input = &pass_desc.inputs[i];
+        if (!input->name) {
+            break;
+        }
+        //shd_desc.fs.images[i].name = input->name;
+        shd_desc.fs.images[i].image_type = SG_IMAGETYPE_2D;
+        shd_desc.fs.images[i].sample_type = _SG_IMAGESAMPLETYPE_DEFAULT;
+        pass->inputs[i] = input->id;
+        i++;
+    }
+    sg_shader shd = sg_make_shader(&shd_desc);
+    pass->input_count = i;
+
+    /* 创建渲染管线 */
+    sg_pipeline_desc pip_desc = {};
+    pip_desc.shader = shd;
+    pip_desc.layout.attrs[0].buffer_index = 0;
+    pip_desc.layout.attrs[0].format = SG_VERTEXFORMAT_FLOAT3;
+    pip_desc.layout.attrs[1].buffer_index = 0;
+    pip_desc.layout.attrs[1].format = SG_VERTEXFORMAT_FLOAT2;
+    pip_desc.depth.pixel_format = SG_PIXELFORMAT_DEPTH;
+    pip_desc.depth.compare = SG_COMPAREFUNC_LESS_EQUAL;
+    pip_desc.depth.write_enabled = true;
+    pip_desc.colors[0].pixel_format = SG_PIXELFORMAT_RGBA8;
+
+    pass->offscreen_pass.pip = sg_make_pipeline(&pip_desc);
+
+    /* 创建颜色和深度纹理 */
+    sg_image_desc color_target_desc = {};
+    color_target_desc.render_target = true;
+    color_target_desc.width = pass_desc.width;
+    color_target_desc.height = pass_desc.height;
+    color_target_desc.pixel_format = SG_PIXELFORMAT_RGBA8;
+    color_target_desc.label = "color-target";
+    pass->offscreen_pass.color_target = sg_make_image(&color_target_desc);
+
+    sg_image_desc depth_target_desc = {};
+    depth_target_desc.render_target = true;
+    depth_target_desc.width = pass_desc.width;
+    depth_target_desc.height = pass_desc.height;
+    depth_target_desc.pixel_format = SG_PIXELFORMAT_DEPTH;
+    depth_target_desc.label = "depth-target";
+    pass->offscreen_pass.depth_target = sg_make_image(&depth_target_desc);
+
+    /* 创建渲染通道 */
+    sg_attachments_desc pass_sg_desc = {};
+    pass_sg_desc.colors[0].image = pass->offscreen_pass.color_target;
+    pass_sg_desc.depth_stencil.image = pass->offscreen_pass.depth_target;
+    pass_sg_desc.label = "fx-pass";
+
+    pass->offscreen_pass.attachment = sg_make_attachments(&pass_sg_desc);
+
+
+
+    sg_sampler_desc sampler_desc = {};
+    sampler_desc.min_filter = SG_FILTER_LINEAR;
+    sampler_desc.mag_filter = SG_FILTER_LINEAR;
+ 
+
+    pass->offscreen_pass.smp = sg_make_sampler(&sampler_desc);
+
+    
+
+    return fx->pass_count - 1;
+}
+
+
+
+
+
+/*
+
+
+typedef struct sokol_pass_desc_t {
+    const char* shader;
+    int32_t width;
+    int32_t height;
+    sg_pixel_format color_format;
+    sokol_pass_input_t inputs[SOKOL_MAX_EFFECT_INPUTS];
+} sokol_pass_desc_t;
+*/
+ 
+
+
+SokolEffect sokol_init_bloom(int width, int height) {
+    SokolEffect effect;
+    int blur_w = width / 2;
+    int blur_h = height / 2;
+    sokol_pass_desc_t t;
+    int threshold_pass = sokol_effect_add_pass(&effect, {
+        blur_w,
+        blur_h,
+        shd_threshold,
+        _SG_PIXELFORMAT_DEFAULT,
+        { {"tex", 0} }
+        });
+
+    int blur_h_pass = sokol_effect_add_pass(&effect, {
+        blur_w,
+        blur_h,
+        shd_h_blur,
+        _SG_PIXELFORMAT_DEFAULT,
+        { {"tex", threshold_pass} }
+        });
+
+    int blur_v_pass = sokol_effect_add_pass(&effect, {
+        blur_w,
+        blur_h,
+        shd_v_blur,
+        _SG_PIXELFORMAT_DEFAULT,
+        { {"tex", blur_h_pass} }
+        });
+
+    sokol_effect_add_pass(&effect, {
+        width,
+        height,
+        shd_blend,
+        _SG_PIXELFORMAT_DEFAULT,
+        { {"tex0", 0}, {"tex1", blur_v_pass} }
+        });
+
+    return effect;
+}
+
+
+/*
+* 
+sg_image sokol_effect_run(
+    SokolCanvas* sk_canvas,
+    SokolEffect* effect,
+    sg_image input)
+
+
+*/
+
+
+
+
+static void effect_pass_draw(
+    SokolCanvas* sk_canvas,
+    SokolEffect* effect,
+    sokol_pass_t* fx_pass,
+    sg_image input_0,
+    sg_sampler sampler) // 添加 sampler 参数
+{
+
+    sg_pass pass = {};
+    pass.action = fx_pass->offscreen_pass.pass_action;
+    pass.attachments = fx_pass->offscreen_pass.attachment;
+
+
+    sg_begin_pass(pass);
+    sg_apply_pipeline(fx_pass->offscreen_pass.pip);
+
+    // 初始化绑定
+    sg_bindings bind = {};
+    bind.vertex_buffers[0] = sk_canvas->offscreen_quad;
+
+    // 绑定片段着色器的纹理
+    for (int i = 0; i < fx_pass->input_count; i++) {
+        int input = fx_pass->inputs[i];
+        if (input == 0) {
+            bind.fs.images[i] = input_0;  // 使用 fs.images 绑定片段着色器纹理
+        }
+        else {
+            bind.fs.images[i] = effect->pass[input - 1].offscreen_pass.color_target;
+        }
+        bind.fs.samplers[i] = sampler;  // 使用 fs.samplers 绑定采样器
+    }
+
+    sg_apply_bindings(&bind);
+    sg_draw(0, 6, 1);
+    sg_end_pass();
+}
+
+
+
+
+sg_buffer init_quad() {
+    float quad_data[] = {
+        -1.0f, -1.0f,  0.0f,   0, 0,
+         1.0f, -1.0f,  0.0f,   1, 0,
+         1.0f,  1.0f,  0.0f,   1, 1,
+        -1.0f, -1.0f,  0.0f,   0, 0,
+         1.0f,  1.0f,  0.0f,   1, 1,
+        -1.0f,  1.0f,  0.0f,   0, 1
+    };
+
+    sg_buffer_desc vbuf_desc = {};
+    vbuf_desc.size = sizeof(quad_data);
+    vbuf_desc.data.ptr = quad_data; // 使用 data.ptr 指定数据指针
+    vbuf_desc.data.size = sizeof(quad_data); // 设置数据大小
+    vbuf_desc.usage = SG_USAGE_IMMUTABLE;
+
+    return sg_make_buffer(&vbuf_desc);
+}
+
+
+sg_image sokol_effect_run(
+    SokolCanvas* sk_canvas,
+    SokolEffect* effect,
+    sg_image input)
+{
+    int i;
+    for (i = 0; i < effect->pass_count; i++) {
+        effect_pass_draw(sk_canvas, effect, &effect->pass[i], input, effect->pass[i].offscreen_pass.smp);
+    }
+
+    return effect->pass[effect->pass_count - 1].offscreen_pass.color_target;
+}
+
 
 
 static
@@ -310,6 +734,65 @@ sg_pass_action init_pass_action(const EcsCanvas* canvas) {
 }
 
  
+static
+sg_pass_action init_tex_pass_action() {
+
+    sg_pass_action pass_action = {};
+    pass_action.colors[0].load_action = SG_LOADACTION_CLEAR;
+    pass_action.colors[0].clear_value = {0,0,0 };
+    return pass_action;
+}
+
+
+
+
+static sg_pipeline init_tex_pipeline() {
+    /* 创建着色器描述 */
+    sg_shader_desc shd_desc = {};
+    shd_desc.vs.source =
+        "#version 330\n"
+        "layout(location=0) in vec4 v_position;\n"
+        "layout(location=1) in vec2 v_uv;\n"
+        "out vec2 uv;\n"
+        "void main() {\n"
+        "  gl_Position = v_position;\n"
+        "  uv = v_uv;\n"
+        "}\n";
+    shd_desc.fs.source =
+        "#version 330\n"
+        "uniform sampler2D tex;\n"
+        "out vec4 frag_color;\n"
+        "in vec2 uv;\n"
+        "void main() {\n"
+        "  frag_color = texture(tex, uv);\n"
+        "}\n";
+
+    // 设置片段着色器的纹理信息
+    //shd_desc.fs.images[0].name = "tex";
+    shd_desc.fs.images[0].image_type = SG_IMAGETYPE_2D;
+
+    sg_shader shd = sg_make_shader(&shd_desc);
+
+    /* 创建渲染管线描述 */
+    sg_pipeline_desc pip_desc = {};
+    pip_desc.shader = shd;
+
+    // 配置顶点布局
+    pip_desc.layout.attrs[0].buffer_index = 0;
+    pip_desc.layout.attrs[0].format = SG_VERTEXFORMAT_FLOAT3; // 位置
+    pip_desc.layout.attrs[1].buffer_index = 0;
+    pip_desc.layout.attrs[1].format = SG_VERTEXFORMAT_FLOAT2; // UV 坐标
+
+    // 深度和模板设置
+    pip_desc.depth.compare = SG_COMPAREFUNC_LESS_EQUAL;
+    pip_desc.depth.write_enabled = false;
+
+    // 创建并返回渲染管线
+    return sg_make_pipeline(&pip_desc);
+}
+
+
+
 
 static
 sg_pipeline init_pipeline() {
@@ -1154,6 +1637,34 @@ void populate_materials(flecs::world& world, vs_materials_t& mat_u) {
 }
 
 
+
+
+static sg_image init_render_target(int32_t width, int32_t height) {
+    sg_image_desc img_desc = {};
+    img_desc.width = width;
+    img_desc.height = height;
+    img_desc.pixel_format = SG_PIXELFORMAT_RGBA16F;
+    img_desc.sample_count = 1;
+    img_desc.label = "color-image";
+
+    return sg_make_image(&img_desc);
+}
+
+
+
+static sg_image init_render_depth_target(int32_t width, int32_t height) {
+    sg_image_desc img_desc = {};
+    img_desc.width = width;
+    img_desc.height = height;
+    img_desc.pixel_format = SG_PIXELFORMAT_DEPTH;
+    img_desc.sample_count = 1;
+    img_desc.label = "depth-image";
+
+    return sg_make_image(&img_desc);
+}
+
+
+
 void _sg_initialize(int w, int h) 
 {
     global_width = w;
@@ -1267,14 +1778,26 @@ void _sg_initialize(int w, int h)
 
 
 
+    sg_image offscreen_tex = init_render_target(w, h);
+
+    sg_image offscreen_depth_tex = init_render_depth_target(w, h);
+
     // 初始化 SokolCanvas
     SokolCanvas sokol_canvas;
     // 设置背景颜色，您可以根据需要修改
     sokol_canvas.background_color = { 0.2f, 0.1f, 0.1f }; // 灰色背景
     sokol_canvas.pass_action = init_pass_action(&sokol_canvas);
     sokol_canvas.pip = init_pipeline();
+    sokol_canvas.offscreen_quad = init_quad();
+
+    sokol_canvas.fx_bloom = sokol_init_bloom(w, h);
 
 
+    sokol_canvas.tex_pass_action = init_tex_pass_action();
+    
+    sokol_canvas.tex_pip = init_tex_pipeline();
+    sokol_canvas.offscreen_tex = offscreen_tex;
+    sokol_canvas.offscreen_depth_tex = offscreen_depth_tex;
 
 
 
