@@ -54,7 +54,7 @@ typedef struct sokol_offscreen_pass_t {
 
 
 typedef struct sokol_pass_t {
-    sokol_offscreen_pass_t offscreen_pass;
+    sokol_offscreen_pass_t sub_offscreen_pass;
     int32_t input_count;
     int32_t param_count;
     int32_t inputs[SOKOL_MAX_EFFECT_INPUTS];
@@ -374,7 +374,7 @@ struct SokolCanvas {
 
     sg_image offscreen_tex;
     sg_image offscreen_depth_tex;
-    //sg_pass offscreen_pass;
+    sg_pass offscreen_pass;
     sg_pass_action tex_pass_action;
     sg_buffer offscreen_quad;
 
@@ -533,7 +533,7 @@ int sokol_effect_add_pass(
     pip_desc.depth.write_enabled = true;
     pip_desc.colors[0].pixel_format = SG_PIXELFORMAT_RGBA8;
 
-    pass->offscreen_pass.pip = sg_make_pipeline(&pip_desc);
+    pass->sub_offscreen_pass.pip = sg_make_pipeline(&pip_desc);
 
     /* 创建颜色和深度纹理 */
     sg_image_desc color_target_desc = {};
@@ -542,7 +542,7 @@ int sokol_effect_add_pass(
     color_target_desc.height = pass_desc.height;
     color_target_desc.pixel_format = SG_PIXELFORMAT_RGBA8;
     color_target_desc.label = "color-target";
-    pass->offscreen_pass.color_target = sg_make_image(&color_target_desc);
+    pass->sub_offscreen_pass.color_target = sg_make_image(&color_target_desc);
 
     sg_image_desc depth_target_desc = {};
     depth_target_desc.render_target = true;
@@ -550,15 +550,15 @@ int sokol_effect_add_pass(
     depth_target_desc.height = pass_desc.height;
     depth_target_desc.pixel_format = SG_PIXELFORMAT_DEPTH;
     depth_target_desc.label = "depth-target";
-    pass->offscreen_pass.depth_target = sg_make_image(&depth_target_desc);
+    pass->sub_offscreen_pass.depth_target = sg_make_image(&depth_target_desc);
 
     /* 创建渲染通道 */
     sg_attachments_desc pass_sg_desc = {};
-    pass_sg_desc.colors[0].image = pass->offscreen_pass.color_target;
-    pass_sg_desc.depth_stencil.image = pass->offscreen_pass.depth_target;
+    pass_sg_desc.colors[0].image = pass->sub_offscreen_pass.color_target;
+    pass_sg_desc.depth_stencil.image = pass->sub_offscreen_pass.depth_target;
     pass_sg_desc.label = "fx-pass";
 
-    pass->offscreen_pass.attachment = sg_make_attachments(&pass_sg_desc);
+    pass->sub_offscreen_pass.attachment = sg_make_attachments(&pass_sg_desc);
 
 
 
@@ -567,7 +567,7 @@ int sokol_effect_add_pass(
     sampler_desc.mag_filter = SG_FILTER_LINEAR;
  
 
-    pass->offscreen_pass.smp = sg_make_sampler(&sampler_desc);
+    pass->sub_offscreen_pass.smp = sg_make_sampler(&sampler_desc);
 
     
 
@@ -655,12 +655,12 @@ static void effect_pass_draw(
 {
 
     sg_pass pass = {};
-    pass.action = fx_pass->offscreen_pass.pass_action;
-    pass.attachments = fx_pass->offscreen_pass.attachment;
+    pass.action = fx_pass->sub_offscreen_pass.pass_action;
+    pass.attachments = fx_pass->sub_offscreen_pass.attachment;
 
 
     sg_begin_pass(pass);
-    sg_apply_pipeline(fx_pass->offscreen_pass.pip);
+    sg_apply_pipeline(fx_pass->sub_offscreen_pass.pip);
 
     // 初始化绑定
     sg_bindings bind = {};
@@ -673,7 +673,7 @@ static void effect_pass_draw(
             bind.fs.images[i] = input_0;  // 使用 fs.images 绑定片段着色器纹理
         }
         else {
-            bind.fs.images[i] = effect->pass[input - 1].offscreen_pass.color_target;
+            bind.fs.images[i] = effect->pass[input - 1].sub_offscreen_pass.color_target;
         }
         bind.fs.samplers[i] = sampler;  // 使用 fs.samplers 绑定采样器
     }
@@ -713,10 +713,10 @@ sg_image sokol_effect_run(
 {
     int i;
     for (i = 0; i < effect->pass_count; i++) {
-        effect_pass_draw(sk_canvas, effect, &effect->pass[i], input, effect->pass[i].offscreen_pass.smp);
+        effect_pass_draw(sk_canvas, effect, &effect->pass[i], input, effect->pass[i].sub_offscreen_pass.smp);
     }
 
-    return effect->pass[effect->pass_count - 1].offscreen_pass.color_target;
+    return effect->pass[effect->pass_count - 1].sub_offscreen_pass.color_target;
 }
 
 
@@ -1664,6 +1664,32 @@ static sg_image init_render_depth_target(int32_t width, int32_t height) {
 }
 
 
+static
+sg_pass init_offscreen_pass(sg_image img, sg_image depth_img) {
+    sg_pass pass;
+
+    sg_attachments_desc attachments_desc = {};
+    attachments_desc.colors[0].image = img;
+    attachments_desc.depth_stencil.image = depth_img;
+    attachments_desc.label = "offscreen-attachments";
+    sg_attachments attachments = sg_make_attachments(&attachments_desc);
+
+    // 配置渲染通道的清除操作
+    sg_pass_action pass_action = {};
+    pass_action.colors[0].load_action = SG_LOADACTION_CLEAR;
+    pass_action.colors[0].clear_value = { 0.25f, 0.25f, 0.25f, 1.0f }; // 使用列表初始化
+    pass_action.depth.load_action = SG_LOADACTION_CLEAR;
+    pass_action.depth.clear_value = 1.0f;
+
+    // 将附件和清除操作应用到离屏渲染通道
+    pass.attachments = attachments;
+    pass.action = pass_action;
+    pass.label = "offscreen-pass";
+
+    return pass;
+}
+
+
 
 void _sg_initialize(int w, int h) 
 {
@@ -1799,7 +1825,7 @@ void _sg_initialize(int w, int h)
     sokol_canvas.offscreen_tex = offscreen_tex;
     sokol_canvas.offscreen_depth_tex = offscreen_depth_tex;
 
-
+    sokol_canvas.offscreen_pass = init_offscreen_pass(offscreen_tex, offscreen_depth_tex);
 
 
     // 创建一个带有 EcsCanvas 组件的实体
