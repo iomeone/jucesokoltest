@@ -74,88 +74,55 @@ typedef struct SokolEffect {
 } SokolEffect;
 
 
+static
+const char* shd_threshold =
+"float thresh = 1.0;\n"
+"vec4 c = texture(tex, uv);\n"
+"c.r = max(c.r - thresh, 0);\n"
+"c.g = max(c.g - thresh, 0);\n"
+"c.b = max(c.b - thresh, 0);\n"
+"frag_color = c;\n";
 
-const char* shd_threshold = R"(
-    #version 330 core
-    uniform sampler2D tex;
-    out vec4 frag_color;
-    in vec2 uv;
-    void main() {
-        float thresh = 1.0;
-        vec4 c = texture(tex, uv);
-        c.r = max(c.r - thresh, 0);
-        c.g = max(c.g - thresh, 0);
-        c.b = max(c.b - thresh, 0);
-        frag_color = c;
-    }
-)";
+static
+const char* shd_h_blur =
+"float kernel = 50.0;\n"
+"vec4 sum = vec4(0.0);\n"
+"float width = 800;\n"
+"float height = 600;\n"
+"float x = uv.x;\n"
+"float y = uv.y;\n"
+"float i, g;\n"
 
+"kernel = kernel / width;\n"
+"kernel = kernel / (width / height);\n"
+"for(i=-kernel; i<=kernel; i+=1 / width) {\n"
+"	g = i / kernel;\n"
+"	g *= g;\n"
+"	sum += texture(tex, vec2(x + i, y)) * exp(-(g) * 5);\n"
+"}\n"
+"frag_color = sum / 20;\n";
 
-const char* shd_h_blur = R"(
-    #version 330 core
-    uniform sampler2D tex;
-    out vec4 frag_color;
-    in vec2 uv;
-    void main() {
-        float kernel = 50.0;
-        vec4 sum = vec4(0.0);
-        float width = 800;
-        float height = 600;
-        float x = uv.x;
-        float y = uv.y;
-        float i, g;
+static
+const char* shd_v_blur =
+"float kernel = 50.0;\n"
+"vec4 sum = vec4(0.0);\n"
+"float width = 800;\n"
+"float height = 600;\n"
+"float x = uv.x;\n"
+"float y = uv.y;\n"
+"float i, g;\n"
 
-        kernel = kernel / width;
-        kernel = kernel / (width / height);
-        for(i = -kernel; i <= kernel; i += 1.0 / width) {
-            g = i / kernel;
-            g *= g;
-            sum += texture(tex, vec2(x + i, y)) * exp(-(g) * 5);
-        }
-        frag_color = sum / 20;
-    }
-)";
+"kernel = kernel / width;\n"
+"for(i=-kernel; i<=kernel; i+=1 / width) {\n"
+"	g = i / kernel;\n"
+"	g *= g;\n"
+"	sum += texture(tex, vec2(x, y + i)) * exp(-(g) * 5);\n"
+"}\n"
+"frag_color = sum / 20;\n";
 
-
-
-
-const char* shd_v_blur = R"(
-    #version 330 core
-    uniform sampler2D tex;
-    out vec4 frag_color;
-    in vec2 uv;
-    void main() {
-        float kernel = 50.0;
-        vec4 sum = vec4(0.0);
-        float width = 800;
-        float height = 600;
-        float x = uv.x;
-        float y = uv.y;
-        float i, g;
-
-        kernel = kernel / width;
-        for(i = -kernel; i <= kernel; i += 1.0 / width) {
-            g = i / kernel;
-            g *= g;
-            sum += texture(tex, vec2(x, y + i)) * exp(-(g) * 5);
-        }
-        frag_color = sum / 20;
-    }
-)";
-
-
-// 混合着色器
-const char* shd_blend = R"(
-    #version 330 core
-    uniform sampler2D tex0;
-    uniform sampler2D tex1;
-    out vec4 frag_color;
-    in vec2 uv;
-    void main() {
-        frag_color = texture(tex0, uv) + texture(tex1, uv);
-    }
-)";
-
+static
+const char* shd_blend =
+"frag_color = texture(tex0, uv) + texture(tex1, uv);\n";
 
 
 
@@ -525,8 +492,8 @@ int sokol_effect_add_pass(
 
 
         shd_desc.fs.image_sampler_pairs[i].used = true;
-        shd_desc.fs.image_sampler_pairs[i].image_slot = 0;
-        shd_desc.fs.image_sampler_pairs[i].sampler_slot = 0;
+        shd_desc.fs.image_sampler_pairs[i].image_slot = i;
+        shd_desc.fs.image_sampler_pairs[i].sampler_slot = i;
         shd_desc.fs.image_sampler_pairs[i].glsl_name = input->name;
 
 
@@ -785,7 +752,25 @@ static sg_pipeline init_tex_pipeline() {
 
     // 设置片段着色器的纹理信息
     //shd_desc.fs.images[0].name = "tex";
-    shd_desc.fs.images[0].image_type = SG_IMAGETYPE_2D;
+
+
+    {
+        shd_desc.fs.images[0].used = true;
+        shd_desc.fs.images[0].image_type = SG_IMAGETYPE_2D;
+        shd_desc.fs.images[0].sample_type = _SG_IMAGESAMPLETYPE_DEFAULT;
+
+
+        shd_desc.fs.samplers[0].used = true;
+        shd_desc.fs.samplers[0].sampler_type = SG_SAMPLERTYPE_FILTERING;
+
+
+        shd_desc.fs.image_sampler_pairs[0].used = true;
+        shd_desc.fs.image_sampler_pairs[0].image_slot = 0;
+        shd_desc.fs.image_sampler_pairs[0].sampler_slot = 0;
+        shd_desc.fs.image_sampler_pairs[0].glsl_name = "tex";
+    }
+
+
 
     sg_shader shd = sg_make_shader(&shd_desc);
 
