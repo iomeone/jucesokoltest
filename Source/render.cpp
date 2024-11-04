@@ -579,8 +579,8 @@ typedef struct sokol_pass_desc_t {
 
 SokolEffect sokol_init_bloom(int width, int height) {
     SokolEffect effect;
-    int blur_w = width / 2;
-    int blur_h = height / 2;
+    int blur_w = width * 0.2;
+    int blur_h = height * 0.2;
     sokol_pass_desc_t t;
     int threshold_pass = sokol_effect_add_pass(&effect, {
         blur_w,
