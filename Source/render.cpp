@@ -492,14 +492,16 @@ const char* vs_fx_shader =
 "  uv = v_uv;\n"
 "}\n";
 
+
+char fs_shader[4096] = { 0 };
 int sokol_effect_add_pass(
     SokolEffect* fx,
     sokol_pass_desc_t pass_desc)
 {
     sokol_pass_t* pass = &fx->pass[fx->pass_count++];
 
-    const char* fs_shader = build_fs_shader(pass_desc).c_str();
-
+     auto _fs_shader = build_fs_shader(pass_desc);
+    strcpy(fs_shader, _fs_shader.c_str());
     /* 创建着色器 */
     sg_shader_desc shd_desc = {};
     shd_desc.vs.source = vs_fx_shader;
@@ -513,8 +515,22 @@ int sokol_effect_add_pass(
             break;
         }
         //shd_desc.fs.images[i].name = input->name;
+        shd_desc.fs.images[i].used = true;
         shd_desc.fs.images[i].image_type = SG_IMAGETYPE_2D;
         shd_desc.fs.images[i].sample_type = _SG_IMAGESAMPLETYPE_DEFAULT;
+
+
+        shd_desc.fs.samplers[i].used = true;
+        shd_desc.fs.samplers[i].sampler_type = SG_SAMPLERTYPE_FILTERING;
+
+
+        shd_desc.fs.image_sampler_pairs[i].used = true;
+        shd_desc.fs.image_sampler_pairs[i].image_slot = 0;
+        shd_desc.fs.image_sampler_pairs[i].sampler_slot = 0;
+        shd_desc.fs.image_sampler_pairs[i].glsl_name = input->name;
+
+
+
         pass->inputs[i] = input->id;
         i++;
     }
@@ -647,9 +663,9 @@ sg_image sokol_effect_run(
 
 
 static void effect_pass_draw(
-    SokolCanvas* sk_canvas,
-    SokolEffect* effect,
-    sokol_pass_t* fx_pass,
+    const SokolCanvas* sk_canvas,
+    const SokolEffect* effect,
+    const sokol_pass_t* fx_pass,
     sg_image input_0,
     sg_sampler sampler) // 添加 sampler 参数
 {
@@ -707,8 +723,8 @@ sg_buffer init_quad() {
 
 
 sg_image sokol_effect_run(
-    SokolCanvas* sk_canvas,
-    SokolEffect* effect,
+    const SokolCanvas* sk_canvas,
+    const SokolEffect* effect,
     sg_image input)
 {
     int i;
@@ -1927,7 +1943,7 @@ void _sg_initialize(int w, int h)
                     sg_range uniform_data = { .ptr = &vs_u, .size = sizeof(vs_uniforms_t) };
                     sg_apply_uniforms(SG_SHADERSTAGE_VS, 0, uniform_data);
                 }
-
+                //if (materials_changed) 
                 {
                     sg_range uniform_data = { .ptr = &mat_u, .size = sizeof(vs_materials_t) };
                     sg_apply_uniforms(SG_SHADERSTAGE_VS, 1, uniform_data);
@@ -1951,9 +1967,9 @@ void _sg_initialize(int w, int h)
         //run passes
         {
 
-            //sg_image tex_fx = sokol_effect_run(sk_canvas, &sk_canvas->fx_bloom, sk_canvas->offscreen_tex);
+            sg_image tex_fx = sokol_effect_run(&canvas, &canvas.fx_bloom, canvas.offscreen_tex);
 
-            sg_pass pass = {};
+            sg_pass pass = {0};
 
 
             sg_swapchain swapchain = {};
@@ -1970,26 +1986,14 @@ void _sg_initialize(int w, int h)
 
             sg_bindings bind = {};
             bind.vertex_buffers[0] = canvas.offscreen_quad;
-            bind.fs.images[0] = canvas.offscreen_tex;
+            bind.fs.images[0] = tex_fx;// canvas.offscreen_tex;
 
             sg_apply_bindings(&bind);
 
             sg_draw(0, 6, 1);
             sg_end_pass();
 
-            sg_commit();
-
-
         }
-
-
-
-
-
-
-
-
-
 
 
 
@@ -2001,24 +2005,7 @@ void _sg_initialize(int w, int h)
             });
 
 
- //   world.system()
- //       .kind(flecs::PostLoad)
- //
- //       .with<EcsSpecular>().oper(flecs::Or)
- //       .with<EcsEmissive>()
- //  
- //       .with<SokolMaterial>().oper(flecs::Not)
- //       .with< MaterialTag>()
- //
- //       .each([](flecs::entity e) {
- //           static uint16_t next_material = 1;
- //           ::MessageBoxA(0, e.name().c_str(), "set SokolMaterial", 0);
- //                e.set(SokolMaterial{ next_material++ });
- ///*                const SokolMaterial* sm = e.get_mut<SokolMaterial>();
- //                auto x = sm->material_id;*/
- //                //::MessageBoxA(0, e.name().c_str(), "set id", 0);
- //                
- //           });
+
 
 
 
