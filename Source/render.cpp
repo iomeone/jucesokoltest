@@ -349,6 +349,8 @@ struct SokolCanvas {
 
     sg_pipeline tex_pip;
 
+    sg_sampler smp;
+
 };
 
 typedef SokolCanvas EcsCanvas;
@@ -1838,6 +1840,12 @@ void _sg_initialize(int w, int h)
     sokol_canvas.offscreen_pass = init_offscreen_pass(offscreen_tex, offscreen_depth_tex);
 
 
+    sg_sampler_desc sampler_desc = {};
+    sampler_desc.min_filter = SG_FILTER_LINEAR;
+    sampler_desc.mag_filter = SG_FILTER_LINEAR;
+    sokol_canvas.smp = sg_make_sampler(&sampler_desc);
+
+
     // 创建一个带有 EcsCanvas 组件的实体
     world.entity()
         .set<EcsCanvas>(sokol_canvas);
@@ -1959,7 +1967,7 @@ void _sg_initialize(int w, int h)
 
             sg_swapchain swapchain = {};
             swapchain.width = global_width;
-            swapchain.height = global_width;
+            swapchain.height = global_height;
 
 
             pass.action = canvas.tex_pass_action;
@@ -1972,6 +1980,8 @@ void _sg_initialize(int w, int h)
             sg_bindings bind = {};
             bind.vertex_buffers[0] = canvas.offscreen_quad;
             bind.fs.images[0] = tex_fx;// canvas.offscreen_tex;
+            bind.fs.samplers[0] = canvas.smp;
+
 
             sg_apply_bindings(&bind);
 
