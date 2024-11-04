@@ -1899,16 +1899,7 @@ void _sg_initialize(int w, int h)
         }
 
 
-        sg_pass pass = {};
- 
 
-        sg_swapchain swapchain = {};
-        swapchain.width = global_width;
-        swapchain.height = global_width;
-
-
-        pass.action = canvas.pass_action;
-        pass.swapchain = swapchain;
 
         sg_begin_pass(canvas.offscreen_pass);
 
@@ -1954,6 +1945,57 @@ void _sg_initialize(int w, int h)
             });
 
         sg_end_pass();
+
+
+
+        //run passes
+        {
+
+            //sg_image tex_fx = sokol_effect_run(sk_canvas, &sk_canvas->fx_bloom, sk_canvas->offscreen_tex);
+
+            sg_pass pass = {};
+
+
+            sg_swapchain swapchain = {};
+            swapchain.width = global_width;
+            swapchain.height = global_width;
+
+
+            pass.action = canvas.tex_pass_action;
+            pass.swapchain = swapchain;
+
+            sg_begin_pass(pass);
+            sg_apply_pipeline(canvas.tex_pip);
+
+
+            sg_bindings bind = {};
+            bind.vertex_buffers[0] = canvas.offscreen_quad;
+            bind.fs.images[0] = canvas.offscreen_tex;
+
+            sg_apply_bindings(&bind);
+
+            sg_draw(0, 6, 1);
+            sg_end_pass();
+
+            sg_commit();
+
+
+        }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
         sg_commit();
  
             });
