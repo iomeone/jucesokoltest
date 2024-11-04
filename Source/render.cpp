@@ -935,6 +935,10 @@ sg_pipeline init_pipeline() {
     pipeline_desc.layout.attrs[7].offset = 48;
     pipeline_desc.layout.attrs[7].format = SG_VERTEXFORMAT_FLOAT4;
 
+
+    pipeline_desc.colors[0].pixel_format = SG_PIXELFORMAT_RGBA16F;
+    pipeline_desc.depth.pixel_format = SG_PIXELFORMAT_DEPTH;
+
     // Depth test and backface culling
     pipeline_desc.depth.compare = SG_COMPAREFUNC_LESS_EQUAL;
     pipeline_desc.depth.write_enabled = true;
@@ -1641,6 +1645,7 @@ void populate_materials(flecs::world& world, vs_materials_t& mat_u) {
 
 static sg_image init_render_target(int32_t width, int32_t height) {
     sg_image_desc img_desc = {};
+    img_desc.render_target = true;
     img_desc.width = width;
     img_desc.height = height;
     img_desc.pixel_format = SG_PIXELFORMAT_RGBA16F;
@@ -1654,6 +1659,7 @@ static sg_image init_render_target(int32_t width, int32_t height) {
 
 static sg_image init_render_depth_target(int32_t width, int32_t height) {
     sg_image_desc img_desc = {};
+    img_desc.render_target = true;
     img_desc.width = width;
     img_desc.height = height;
     img_desc.pixel_format = SG_PIXELFORMAT_DEPTH;
@@ -1666,7 +1672,7 @@ static sg_image init_render_depth_target(int32_t width, int32_t height) {
 
 static
 sg_pass init_offscreen_pass(sg_image img, sg_image depth_img) {
-    sg_pass pass;
+    sg_pass pass = {};
 
     sg_attachments_desc attachments_desc = {};
     attachments_desc.colors[0].image = img;
@@ -1685,6 +1691,9 @@ sg_pass init_offscreen_pass(sg_image img, sg_image depth_img) {
     pass.attachments = attachments;
     pass.action = pass_action;
     pass.label = "offscreen-pass";
+
+
+
 
     return pass;
 }
@@ -1901,7 +1910,7 @@ void _sg_initialize(int w, int h)
         pass.action = canvas.pass_action;
         pass.swapchain = swapchain;
 
-        sg_begin_pass(&pass);
+        sg_begin_pass(canvas.offscreen_pass);
 
 
         sg_apply_pipeline(canvas.pip);
