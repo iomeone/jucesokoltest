@@ -172,12 +172,30 @@ struct EcsPosition3
     float z;
 };
 
+struct EcsRectangle {
+    float width;
+    float height;
+};
 
 
 struct EcsBox{
     float width;
     float height;
     float depth;
+};
+
+
+struct EcsText {
+    float width;
+    float height;
+    float uv_x;
+    float uv_y;
+    float uv_w;
+    float uv_h;
+};
+
+struct EcsTransform3 {
+    mat4 value;
 };
 
 struct EcsCamera
@@ -259,15 +277,7 @@ struct EcsDirectionalLight {
     }
 };
 
-struct EcsRectangle {
-    float width;
-    float height;
-};
 
-
- struct EcsTransform3 {
-    mat4 value;
-} ;
 
 
 
@@ -1078,6 +1088,71 @@ void init_rect_buffers(flecs::world& ecs) {
 
 
 
+static
+void init_text_buffers(flecs::world& ecs) {
+    auto rect_buf = ecs.lookup("SokolTextBuffer");
+    ecs_assert(rect_buf.is_alive(), ECS_INTERNAL_ERROR, NULL);
+
+    auto b = rect_buf.get_mut<SokolBuffer>();
+    ecs_assert(b != nullptr, ECS_INTERNAL_ERROR, NULL);
+
+    vec3 vertices[] = {
+        {-0.5f, -0.5f, 0.0f},
+        { 0.5f, -0.5f, 0.0f},
+        { 0.5f,  0.5f, 0.0f},
+        {-0.5f,  0.5f, 0.0f}
+    };
+
+    //todo: should fill in with correct uv coordinate
+    vec2 uvs[] = {
+
+    };
+
+    uint16_t indices[] = {
+        0, 1, 2,
+        0, 2, 3
+    };
+
+    vec3 normals[6];
+    compute_flat_normals(vertices, indices, 6, normals);
+
+
+
+    {
+        sg_buffer_desc vbuf_desc = {};
+        vbuf_desc.size = sizeof(vertices);
+        vbuf_desc.data = SG_RANGE(vertices);
+        vbuf_desc.usage = SG_USAGE_IMMUTABLE;
+
+        b->vertex_buffer = sg_make_buffer(&vbuf_desc);
+    }
+
+
+
+    {
+        sg_buffer_desc nbuf_desc = {};
+        nbuf_desc.size = sizeof(normals);
+        nbuf_desc.data = SG_RANGE(normals);
+        nbuf_desc.type = SG_BUFFERTYPE_VERTEXBUFFER;
+        nbuf_desc.usage = SG_USAGE_IMMUTABLE;
+
+        b->normal_buffer = sg_make_buffer(&nbuf_desc);
+    }
+
+
+    {
+        sg_buffer_desc ibuf_desc = {};
+        ibuf_desc.size = sizeof(indices);
+        ibuf_desc.data = SG_RANGE(indices);
+        ibuf_desc.type = SG_BUFFERTYPE_INDEXBUFFER;
+        ibuf_desc.usage = SG_USAGE_IMMUTABLE;
+
+        b->index_buffer = sg_make_buffer(&ibuf_desc);
+    }
+
+
+    b->index_count = 6;
+}
 
 
 
@@ -1185,6 +1260,7 @@ void init_buffers(
     flecs::world& world)
 {
     init_rect_buffers(world);
+    init_text_buffers(world);
     init_box_buffers(world);
 }
 
@@ -1230,6 +1306,8 @@ flecs::query<> rectangle_query;
 
 flecs::query<> box_query;
 
+flecs::query<> text_query;
+
 
 //flecs::query<const SokolMaterial> instance_of_material_query;
 
@@ -1259,6 +1337,15 @@ void init_queries(flecs::world& world) {
     box_query = world.query_builder<>()
         .with< EcsPosition3>()
         .with< EcsBox>()
+        .with< EcsRgb>()
+        .with< EcsTransform3>()
+        .cached()
+        .build();
+
+
+    text_query = world.query_builder<>()
+        .with< EcsPosition3>()
+        .with< EcsText>()
         .with< EcsRgb>()
         .with< EcsTransform3>()
         .cached()
@@ -1418,6 +1505,19 @@ void SokolAttachBox(flecs::entity e, SokolBuffer& b) {
 
     return;
 }
+
+
+void SokolAttachText(flecs::entity e, SokolBuffer& b) {
+
+    attachGeometry<EcsRectangle>(b, rectangle_query, [](const EcsRectangle* rect, mat4& transform) {
+        vec3 scale = { rect->width, rect->height, 1.0f };
+            glm_scale(transform, scale);
+        });
+
+    return;
+
+}
+
 
 void SokolAttachBuffer(flecs::entity e, SokolBuffer& b) {
 
@@ -1629,6 +1729,7 @@ void _sg_initialize(int w, int h)
 
     world.component<EcsPosition3>();
     world.component<EcsRectangle>();
+    world.component<EcsBox>();
     world.component<EcsRgb>();
     world.component<EcsTransform3>();
     world.component<EcsCanvas>();
