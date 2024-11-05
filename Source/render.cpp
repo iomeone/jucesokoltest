@@ -363,13 +363,13 @@ struct EcsCanvas {
 
     SokolEffect fx_bloom;
 
-    sg_pipeline tex_pip;
+    sg_pipeline texture_pip;
 
     sg_sampler smp;
 
 
 
-    sg_pipeline pip_text;
+    sg_pipeline pipe_text;
     sg_pass_action pass_action_text;
 };
 
@@ -393,11 +393,11 @@ struct SokolBuffer {
 
     sg_buffer material_buffer;      // Material IDs (per instance)
 
-
     // Application-cached buffers
     EcsRgb* colors;
     mat4* transforms;
     float* materials;
+
 
     // Number of instances
     int32_t instance_count;
@@ -749,10 +749,7 @@ sg_pass_action init_tex_pass_action() {
     return pass_action;
 }
 
-
-
-
-static sg_pipeline init_tex_pipeline() {
+static sg_pipeline init_texture_pipeline() {
     /* 创建着色器描述 */
     sg_shader_desc shd_desc = {};
     shd_desc.vs.source =
@@ -815,6 +812,190 @@ static sg_pipeline init_tex_pipeline() {
     return sg_make_pipeline(&pip_desc);
 }
 
+
+
+
+
+
+sg_pipeline init_text_pipeline() {
+  
+    sg_shader_desc shader_desc = {};
+
+    // Vertex shader uniform blocks
+    shader_desc.vs.uniform_blocks[0].size = sizeof(vs_uniforms_t);
+    shader_desc.vs.uniform_blocks[0].uniforms[0].name = "u_mat_vp";
+    shader_desc.vs.uniform_blocks[0].uniforms[0].type = SG_UNIFORMTYPE_MAT4;
+
+    // Add second uniform block for materials
+    shader_desc.vs.uniform_blocks[1].size = sizeof(vs_materials_t);
+    shader_desc.vs.uniform_blocks[1].uniforms[0].name = "u_materials";
+    shader_desc.vs.uniform_blocks[1].uniforms[0].type = SG_UNIFORMTYPE_FLOAT3;
+    shader_desc.vs.uniform_blocks[1].uniforms[0].array_count = FS_MAX_MATERIALS;
+
+    // Fragment shader uniform blocks
+    shader_desc.fs.uniform_blocks[0].size = sizeof(fs_uniforms_t);
+    shader_desc.fs.uniform_blocks[0].uniforms[0].name = "u_light_ambient";
+    shader_desc.fs.uniform_blocks[0].uniforms[0].type = SG_UNIFORMTYPE_FLOAT3;
+    shader_desc.fs.uniform_blocks[0].uniforms[1].name = "u_light_direction";
+    shader_desc.fs.uniform_blocks[0].uniforms[1].type = SG_UNIFORMTYPE_FLOAT3;
+    shader_desc.fs.uniform_blocks[0].uniforms[2].name = "u_light_color";
+    shader_desc.fs.uniform_blocks[0].uniforms[2].type = SG_UNIFORMTYPE_FLOAT3;
+    shader_desc.fs.uniform_blocks[0].uniforms[3].name = "u_eye_pos";
+    shader_desc.fs.uniform_blocks[0].uniforms[3].type = SG_UNIFORMTYPE_FLOAT3;
+
+
+
+
+    shader_desc.fs.images[0].used = true;
+    shader_desc.fs.images[0].image_type = SG_IMAGETYPE_2D;
+    shader_desc.fs.images[0].sample_type = _SG_IMAGESAMPLETYPE_DEFAULT;
+
+
+    shader_desc.fs.samplers[0].used = true;
+    shader_desc.fs.samplers[0].sampler_type = SG_SAMPLERTYPE_FILTERING;
+
+
+    shader_desc.fs.image_sampler_pairs[0].used = true;
+    shader_desc.fs.image_sampler_pairs[0].image_slot = 0;
+    shader_desc.fs.image_sampler_pairs[0].sampler_slot = 0;
+    shader_desc.fs.image_sampler_pairs[0].glsl_name = "tex";
+
+    // Vertex shader code
+    shader_desc.vs.source =
+        "#version 330\n"
+        "uniform mat4 u_mat_vp;\n"
+        "uniform vec3 u_materials[255];\n"
+        "layout(location=0) in vec3 v_position;\n"
+        "layout(location=1) in vec3 v_normal;\n"
+        "layout(location=2) in vec4 i_color;\n"
+        "layout(location=3) in float i_material;\n"
+        "layout(location=4) in mat4 i_mat_m;\n"
+        "layout(location = 5) in vec2 texcoord0;"
+        "out vec2 uv;\n"
+        "out vec4 position;\n"
+        "out vec3 normal;\n"
+        "out vec4 color;\n"
+        "out vec3 material;\n"
+        "out float f_material;\n"
+        "void main() {\n"
+        "  gl_Position = u_mat_vp * i_mat_m * vec4(v_position, 1.0);\n"
+        "  position = i_mat_m * vec4(v_position, 1.0);\n"
+        "  normal = mat3(i_mat_m) * v_normal;\n"
+        "  color = i_color;\n"
+
+        "   uint material_id = uint(i_material);\n"
+        "   material = u_materials[material_id];\n"
+        "   f_material = i_material;\n"
+        "   uv = texcoord0;\n"
+        "}\n";
+
+    // Fragment shader code
+    shader_desc.fs.source =
+        "#version 330\n"
+        "uniform vec3 u_light_ambient;\n"
+        "uniform vec3 u_light_direction;\n"
+        "uniform vec3 u_light_color;\n"
+        "uniform vec3 u_eye_pos;\n"
+        "in vec4 position;\n"
+        "in vec3 normal;\n"
+        "in vec4 color;\n"
+        "in vec3 material;\n"
+        "in float f_material;\n"
+        "in vec2 uv;\n"
+        "out vec4 frag_color;\n"
+        "void main() {\n"
+        "  float specular_power = material.x;\n"
+        "  float shininess = material.y;\n"
+        "  float emissive = material.z;\n"
+        "  vec3 l = normalize(u_light_direction);\n"
+        "  vec3 n = normalize(normal);\n"
+        "  float dot_n_l = max(dot(n, l), 0.0);\n"
+        "  vec3 v = normalize(u_eye_pos - position.xyz);\n"
+        "  vec3 r = reflect(-l, n);\n"
+        "  float r_dot_v = max(dot(r, v), 0.0);\n"
+        "  vec4 colorOfTex = texture(tex, uv);\n"
+        "  vec4 ambient = vec4(u_light_ambient, 1.0) * (color+colorOfTex);\n"
+        "  vec4 diffuse = vec4(u_light_color, 1.0) *  (color+colorOfTex) * dot_n_l;\n"
+        "  vec4 specular = vec4(specular_power * pow(r_dot_v, shininess) * dot_n_l * u_light_color, 1.0);\n"
+        "  specular = clamp(specular, 0.0, 1.0);\n"
+        "  frag_color =  emissive + ambient + diffuse + specular;\n"
+        "}\n";
+
+    sg_shader shd = sg_make_shader(&shader_desc);
+
+    // Configure rendering pipeline
+    sg_pipeline_desc pipeline_desc = {};
+    pipeline_desc.shader = shd;
+    pipeline_desc.index_type = SG_INDEXTYPE_UINT16;
+
+    // Configure buffer layouts
+    pipeline_desc.layout.buffers[0].stride = sizeof(float) * 3; // Vertex positions
+    pipeline_desc.layout.buffers[0].step_func = SG_VERTEXSTEP_PER_VERTEX;
+
+    pipeline_desc.layout.buffers[1].stride = sizeof(float) * 3; // Normals
+    pipeline_desc.layout.buffers[1].step_func = SG_VERTEXSTEP_PER_VERTEX;
+
+    pipeline_desc.layout.buffers[2].stride = sizeof(EcsRgb); // Colors
+    pipeline_desc.layout.buffers[2].step_func = SG_VERTEXSTEP_PER_INSTANCE;
+
+    pipeline_desc.layout.buffers[3].stride = sizeof(float); // Material IDs
+    pipeline_desc.layout.buffers[3].step_func = SG_VERTEXSTEP_PER_INSTANCE;
+
+    pipeline_desc.layout.buffers[4].stride = sizeof(EcsTransform3); // Transforms
+    pipeline_desc.layout.buffers[4].step_func = SG_VERTEXSTEP_PER_INSTANCE;
+
+    // Configure vertex attributes
+    pipeline_desc.layout.attrs[0].buffer_index = 0; // Position
+    pipeline_desc.layout.attrs[0].offset = 0;
+    pipeline_desc.layout.attrs[0].format = SG_VERTEXFORMAT_FLOAT3;
+
+    pipeline_desc.layout.attrs[1].buffer_index = 1; // Normal
+    pipeline_desc.layout.attrs[1].offset = 0;
+    pipeline_desc.layout.attrs[1].format = SG_VERTEXFORMAT_FLOAT3;
+
+    pipeline_desc.layout.attrs[2].buffer_index = 2; // Color
+    pipeline_desc.layout.attrs[2].offset = 0;
+    pipeline_desc.layout.attrs[2].format = SG_VERTEXFORMAT_FLOAT4;
+
+    pipeline_desc.layout.attrs[3].buffer_index = 3; // Material ID
+    pipeline_desc.layout.attrs[3].offset = 0;
+    pipeline_desc.layout.attrs[3].format = SG_VERTEXFORMAT_FLOAT;
+
+    // Transform matrix attributes
+    pipeline_desc.layout.attrs[4].buffer_index = 4;
+    pipeline_desc.layout.attrs[4].offset = 0;
+    pipeline_desc.layout.attrs[4].format = SG_VERTEXFORMAT_FLOAT4;
+
+    pipeline_desc.layout.attrs[5].buffer_index = 4;
+    pipeline_desc.layout.attrs[5].offset = 16;
+    pipeline_desc.layout.attrs[5].format = SG_VERTEXFORMAT_FLOAT4;
+
+    pipeline_desc.layout.attrs[6].buffer_index = 4;
+    pipeline_desc.layout.attrs[6].offset = 32;
+    pipeline_desc.layout.attrs[6].format = SG_VERTEXFORMAT_FLOAT4;
+
+    pipeline_desc.layout.attrs[7].buffer_index = 4;
+    pipeline_desc.layout.attrs[7].offset = 48;
+    pipeline_desc.layout.attrs[7].format = SG_VERTEXFORMAT_FLOAT4;
+
+
+    pipeline_desc.layout.attrs[8].buffer_index = 5;
+    pipeline_desc.layout.attrs[8].offset = 64;
+    pipeline_desc.layout.attrs[8].format = SG_VERTEXFORMAT_SHORT2N;
+
+
+    pipeline_desc.colors[0].pixel_format = SG_PIXELFORMAT_RGBA16F;
+    pipeline_desc.depth.pixel_format = SG_PIXELFORMAT_DEPTH;
+
+    // Depth test and backface culling
+    pipeline_desc.depth.compare = SG_COMPAREFUNC_LESS_EQUAL;
+    pipeline_desc.depth.write_enabled = true;
+    pipeline_desc.cull_mode = SG_CULLMODE_BACK;
+
+    return sg_make_pipeline(&pipeline_desc);
+
+
+}
 
 
 
@@ -1108,10 +1289,7 @@ void init_text_buffers(flecs::world& ecs) {
         {-0.5f,  0.5f, 0.0f}
     };
 
-    //todo: should fill in with correct uv coordinate
-    vec2 uvs[] = {
 
-    };
 
     uint16_t indices[] = {
         0, 1, 2,
@@ -1154,7 +1332,6 @@ void init_text_buffers(flecs::world& ecs) {
 
         b->index_buffer = sg_make_buffer(&ibuf_desc);
     }
-
 
     b->index_count = 6;
 }
@@ -1407,6 +1584,8 @@ void attachGeometry(SokolBuffer& b, flecs::query<>& query, std::function<void(co
         b.transforms = (mat4*)ecs_os_realloc(b.transforms, b.instance_capacity * sizeof(mat4));
         b.materials = (float*)ecs_os_realloc(b.materials, b.instance_capacity * sizeof(float));
 
+
+
         // Recreate GPU buffers
         {
             if (b.color_buffer.id != SG_INVALID_ID) {
@@ -1417,7 +1596,7 @@ void attachGeometry(SokolBuffer& b, flecs::query<>& query, std::function<void(co
             color_buf_desc.usage = SG_USAGE_DYNAMIC;
             b.color_buffer = sg_make_buffer(&color_buf_desc);
         }
-
+        
         {
             if (b.transform_buffer.id != SG_INVALID_ID) {
                 sg_destroy_buffer(b.transform_buffer);
@@ -1437,11 +1616,13 @@ void attachGeometry(SokolBuffer& b, flecs::query<>& query, std::function<void(co
             material_buf_desc.usage = SG_USAGE_DYNAMIC;
             b.material_buffer = sg_make_buffer(&material_buf_desc);
         }
+
     }
 
     size_t colors_size = count * sizeof(EcsRgb);
     size_t transforms_size = count * sizeof(mat4);
     size_t materials_size = count * sizeof(float);
+    size_t uv_size = count * sizeof(vec2);
 
     int32_t cursor = 0;
 
@@ -1455,7 +1636,6 @@ void attachGeometry(SokolBuffer& b, flecs::query<>& query, std::function<void(co
         b.colors[cursor] = *color;
 
         const EcsTransform3* transform = ent.get< EcsTransform3>();
-
 
         // Copy the transform matrix
         glm_mat4_copy(const_cast<mat4&>(transform->value), b.transforms[cursor]);
@@ -1483,6 +1663,8 @@ void attachGeometry(SokolBuffer& b, flecs::query<>& query, std::function<void(co
     sg_update_buffer(b.color_buffer, { .ptr = b.colors, .size = colors_size });
     sg_update_buffer(b.transform_buffer, { .ptr = b.transforms, .size = transforms_size });
     sg_update_buffer(b.material_buffer, { .ptr = b.materials, .size = materials_size });
+
+    
 }
 
 
@@ -1771,6 +1953,13 @@ void _sg_initialize(int w, int h)
         .add<SokolBuffer>()
         .add<BoxTag>();
 
+
+
+    auto SokolTextBuffer = world.entity("SokolTextBuffer")
+        .add<SokolBuffer>()
+        .add<BoxTag>();
+
+    
   
     sg_logger logger = {
           .func = my_log,  // 设置自定义日志函数
@@ -1859,7 +2048,7 @@ void _sg_initialize(int w, int h)
 
     sokol_canvas.tex_pass_action = init_tex_pass_action();
     
-    sokol_canvas.tex_pip = init_tex_pipeline();
+    sokol_canvas.texture_pip = init_texture_pipeline();
     sokol_canvas.offscreen_tex = offscreen_tex;
     sokol_canvas.offscreen_depth_tex = offscreen_depth_tex;
 
@@ -1871,6 +2060,15 @@ void _sg_initialize(int w, int h)
     sampler_desc.mag_filter = SG_FILTER_LINEAR;
     sokol_canvas.smp = sg_make_sampler(&sampler_desc);
 
+
+    {
+        sokol_canvas.pipe_text = init_text_pipeline();
+        
+
+
+
+
+    }
 
     // 创建一个带有 EcsCanvas 组件的实体
     world.entity()
@@ -1969,14 +2167,14 @@ void _sg_initialize(int w, int h)
 
 
 
-
-        sg_begin_pass(canvas.offscreen_pass);
-
-
-        sg_apply_pipeline(canvas.pip);
+        {
+            sg_begin_pass(canvas.offscreen_pass);
 
 
-        world.each([&](flecs::entity e, SokolBuffer& buffer) {
+            sg_apply_pipeline(canvas.pip);
+
+
+            world.each([&](flecs::entity e, SokolBuffer& buffer) {
                 if (buffer.instance_count == 0) {
                     return;
                 }
@@ -2011,9 +2209,11 @@ void _sg_initialize(int w, int h)
 
 
                 sg_draw(0, buffer.index_count, buffer.instance_count);
-            });
+                });
 
-        sg_end_pass();
+            sg_end_pass();
+        }
+       
 
 
 
@@ -2034,7 +2234,7 @@ void _sg_initialize(int w, int h)
             pass.swapchain = swapchain;
 
             sg_begin_pass(pass);
-            sg_apply_pipeline(canvas.tex_pip);
+            sg_apply_pipeline(canvas.texture_pip);
 
 
             sg_bindings bind = {};
@@ -2256,3 +2456,14 @@ void _sg_render(int w, int h)
     world.progress();
 
 }
+
+
+
+
+
+
+
+
+
+
+// sokol-shdc --input loadpng-sapp.glsl --output loadpng-sapp.glsl.h --slang glsl330
