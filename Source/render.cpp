@@ -141,8 +141,8 @@ struct EcsRgb {
     float b;
     float a;
 };
-typedef EcsRgb ecs_rgb_t ;
-typedef EcsRgb ecs_rgba_t;
+ 
+
 
 
 
@@ -324,7 +324,7 @@ struct EcsRectangle {
      flecs::entity light;
      flecs::entity camera;
 
-     ecs_rgb_t ambient_light;
+     EcsRgb ambient_light;
      int32_t width;
      int32_t height;
 
@@ -337,7 +337,7 @@ struct EcsRectangle {
 
 
 
-struct SokolCanvas {
+struct EcsCanvas {
     sg_pass_action pass_action;
     sg_pipeline pip;
 
@@ -359,7 +359,7 @@ struct SokolCanvas {
 
 };
 
-typedef SokolCanvas EcsCanvas;
+
 
 
 
@@ -627,7 +627,7 @@ SokolEffect sokol_init_bloom(int width, int height) {
 /*
 * 
 sg_image sokol_effect_run(
-    SokolCanvas* sk_canvas,
+    EcsCanvas* sk_canvas,
     SokolEffect* effect,
     sg_image input)
 
@@ -638,7 +638,7 @@ sg_image sokol_effect_run(
 
 
 static void effect_pass_draw(
-    const SokolCanvas* sk_canvas,
+    const EcsCanvas* sk_canvas,
     const SokolEffect* effect,
     const sokol_pass_t* fx_pass,
     sg_image input_0,
@@ -698,7 +698,7 @@ sg_buffer init_quad() {
 
 
 sg_image sokol_effect_run(
-    const SokolCanvas* sk_canvas,
+    const EcsCanvas* sk_canvas,
     const SokolEffect* effect,
     sg_image input)
 {
@@ -714,7 +714,7 @@ sg_image sokol_effect_run(
 
 static
 sg_pass_action init_pass_action(const EcsCanvas* canvas) {
-    ecs_rgb_t bg_color = canvas->background_color;
+    EcsRgb bg_color = canvas->background_color;
 
     sg_pass_action pass_action = {};
     pass_action.colors[0].load_action = SG_LOADACTION_CLEAR;
@@ -1311,7 +1311,7 @@ void attachGeometry(SokolBuffer& b, flecs::query<>& query, std::function<void(co
     // Reallocate application-level buffers if needed
     if (b.instance_capacity < count) {
         b.instance_capacity = count * 2; // Increase capacity to avoid frequent reallocations
-        b.colors = (ecs_rgba_t*)ecs_os_realloc(b.colors, b.instance_capacity * sizeof(ecs_rgba_t));
+        b.colors = (EcsRgb*)ecs_os_realloc(b.colors, b.instance_capacity * sizeof(EcsRgb));
         b.transforms = (mat4*)ecs_os_realloc(b.transforms, b.instance_capacity * sizeof(mat4));
         b.materials = (float*)ecs_os_realloc(b.materials, b.instance_capacity * sizeof(float));
 
@@ -1321,7 +1321,7 @@ void attachGeometry(SokolBuffer& b, flecs::query<>& query, std::function<void(co
                 sg_destroy_buffer(b.color_buffer);
             }
             sg_buffer_desc color_buf_desc = {};
-            color_buf_desc.size = b.instance_capacity * sizeof(ecs_rgba_t);
+            color_buf_desc.size = b.instance_capacity * sizeof(EcsRgb);
             color_buf_desc.usage = SG_USAGE_DYNAMIC;
             b.color_buffer = sg_make_buffer(&color_buf_desc);
         }
@@ -1347,7 +1347,7 @@ void attachGeometry(SokolBuffer& b, flecs::query<>& query, std::function<void(co
         }
     }
 
-    size_t colors_size = count * sizeof(ecs_rgba_t);
+    size_t colors_size = count * sizeof(EcsRgb);
     size_t transforms_size = count * sizeof(mat4);
     size_t materials_size = count * sizeof(float);
 
@@ -1437,7 +1437,7 @@ void SokolAttachBuffer(flecs::entity e, SokolBuffer& b) {
 
 
 static
-void init_uniforms(const SokolCanvas& canvas, vs_uniforms_t& vs_out, fs_uniforms_t& fs_out, const sokol_render_state_t* state)
+void init_uniforms(const EcsCanvas& canvas, vs_uniforms_t& vs_out, fs_uniforms_t& fs_out, const sokol_render_state_t* state)
 {
     // 定义矩阵
     mat4 mat_p, mat_v;
@@ -1631,7 +1631,7 @@ void _sg_initialize(int w, int h)
     world.component<EcsRectangle>();
     world.component<EcsRgb>();
     world.component<EcsTransform3>();
-    world.component<SokolCanvas>();
+    world.component<EcsCanvas>();
     world.component<SokolBuffer>();
     world.component<EcsCamera>();
     world.component<EcsSpecular>();// .add(flecs::OnInstantiate, flecs::Inherit);
@@ -1736,8 +1736,8 @@ void _sg_initialize(int w, int h)
 
     sg_image offscreen_depth_tex = init_render_depth_target(w, h);
 
-    // 初始化 SokolCanvas
-    SokolCanvas sokol_canvas;
+    // 初始化 EcsCanvas
+    EcsCanvas sokol_canvas;
     // 设置背景颜色，您可以根据需要修改
     sokol_canvas.background_color = { 0.2f, 0.1f, 0.1f }; // 灰色背景
     sokol_canvas.pass_action = init_pass_action(&sokol_canvas);
@@ -1820,9 +1820,9 @@ void _sg_initialize(int w, int h)
 
 
 
-    world.system<const SokolCanvas>()
+    world.system<const EcsCanvas>()
         .kind(flecs::OnStore)
-        .each([](flecs::entity e, const SokolCanvas& canvas) {
+        .each([](flecs::entity e, const EcsCanvas& canvas) {
    
         const sokol_render_state_t* state = world.get<sokol_render_state_t>();
 
