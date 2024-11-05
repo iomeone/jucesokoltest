@@ -1218,10 +1218,14 @@ flecs::world world;
 
 
 
-flecs::query<const EcsPosition3, const EcsRectangle, const EcsRgb, const EcsTransform3> rectangle_query;
+//flecs::query<const EcsPosition3, const EcsRectangle, const EcsRgb, const EcsTransform3> rectangle_query;
+//
+//flecs::query<const EcsPosition3, const EcsBox, const EcsRgb, const EcsTransform3> box_query;
 
-flecs::query<const EcsPosition3, const EcsBox, const EcsRgb, const EcsTransform3> box_query;
 
+flecs::query<> rectangle_query;
+
+flecs::query<> box_query;
 
 
 //flecs::query<const SokolMaterial> instance_of_material_query;
@@ -1237,10 +1241,23 @@ flecs::query<> instance_of_material_query;
 //.build();
 // 在初始化阶段创建查询
 void init_queries(flecs::world& world) {
-    rectangle_query = world.query_builder<const EcsPosition3, const EcsRectangle, const EcsRgb, const EcsTransform3>()
+    rectangle_query = world.query_builder<>()
+
+        .with< EcsPosition3>()
+        .with< EcsRectangle>()
+        .with< EcsRgb>()
+        .with< EcsTransform3>()
+
         .cached()
         .build();
-    box_query = world.query_builder<const EcsPosition3, const EcsBox, const EcsRgb, const EcsTransform3>()
+
+
+
+    box_query = world.query_builder<>()
+        .with< EcsPosition3>()
+        .with< EcsBox>()
+        .with< EcsRgb>()
+        .with< EcsTransform3>()
         .cached()
         .build();
 
@@ -1280,7 +1297,7 @@ void SokolAttachRect(flecs::entity e, SokolBuffer& b) {
     }
     //printf("\n rectangle_query changed \n");
     int32_t count = 0;
-    rectangle_query.each([&](flecs::entity, const EcsPosition3&, const EcsRectangle&, const EcsRgb&, const EcsTransform3&) {
+    rectangle_query.each([&](flecs::entity) {
         count++;
         });
 
@@ -1341,15 +1358,21 @@ void SokolAttachRect(flecs::entity e, SokolBuffer& b) {
 
     int32_t cursor = 0;
 
-    rectangle_query.each([&](flecs::entity ent, const EcsPosition3&, const EcsRectangle& rect, const EcsRgb& color,  const EcsTransform3& transform) {
+    rectangle_query.each([&](flecs::entity ent) {
        
-        b.colors[cursor] = color;
+        const EcsRectangle* rect = ent.get< EcsRectangle>();
+
+        const EcsRgb* color = ent.get< EcsRgb>();
+
+        b.colors[cursor] = *color;
+
+        const EcsTransform3* transform = ent.get< EcsTransform3>();
 
        
-        glm_mat4_copy(const_cast<mat4&>(transform.value), b.transforms[cursor]);
+        glm_mat4_copy(const_cast<mat4&>(transform->value), b.transforms[cursor]);
 
 
-        vec3 scale = { rect.width, rect.height, 1.0f };
+        vec3 scale = { rect->width, rect->height, 1.0f };
         glm_scale(b.transforms[cursor], scale);
 
 
@@ -1400,7 +1423,7 @@ void SokolAttachBox(flecs::entity e, SokolBuffer& b) {
     }
     printf("\n box_query changed \n");
     int32_t count = 0;
-    box_query.each([&](flecs::entity, const EcsPosition3&, const EcsBox&, const EcsRgb&, const EcsTransform3&) {
+    box_query.each([&](flecs::entity) {
         count++;
         });
 
@@ -1461,16 +1484,24 @@ void SokolAttachBox(flecs::entity e, SokolBuffer& b) {
 
     int32_t cursor = 0;
 
-    box_query.each([&](flecs::entity ent, const EcsPosition3&, const EcsBox& box, const EcsRgb& color, const EcsTransform3& transform) {
-        // 复制颜色
-        b.colors[cursor] = color;
+    box_query.each([&](flecs::entity ent) {
+      
+
+        const EcsBox* box = ent.get< EcsBox>();
+
+        const EcsRgb* color = ent.get< EcsRgb>();
+
+        b.colors[cursor] = *color;
+
+        const EcsTransform3* transform = ent.get< EcsTransform3>();
+
 
         // 复制变换矩阵
-        glm_mat4_copy(const_cast<mat4&>(transform.value), b.transforms[cursor]);
+        glm_mat4_copy(const_cast<mat4&>(transform->value), b.transforms[cursor]);
 
 
         // 应用缩放变换
-        vec3 scale = { box.width, box.height, box.depth };
+        vec3 scale = { box->width, box->height, box->depth };
         glm_scale(b.transforms[cursor], scale);
 
 
@@ -1486,7 +1517,6 @@ void SokolAttachBox(flecs::entity e, SokolBuffer& b) {
                 const SokolMaterial* sm = material.get<SokolMaterial>();
                 uint32_t material_id = sm ? sm->material_id : 0;
                 b.materials[cursor] = material_id;
-
             }
         }
 
@@ -2046,14 +2076,14 @@ void _sg_initialize(int w, int h)
 
         };
 
-    if(0)
+    if(1)
     {
 
    
-        // 创建第一个矩形实体
+        // Rectangle
         EcsPosition3 pos1 = { -0.5f, 0.f, 0.0f };
-        EcsRectangle rect1 = { .50f, .50f };
-        EcsRgb color1 = { 1.f, 0.0f, 0.0f, 1.0f };
+        EcsRectangle rect1 = { 20.f, 20.f };
+        EcsRgb color1 = { .5f, 0.0f, 0.0f, 1.0f };
         EcsTransform3 transform1;
         init_transform(transform1, pos1);
 
@@ -2066,7 +2096,7 @@ void _sg_initialize(int w, int h)
 
     if(0)
     {
-        // 创建第二个矩形实体
+        // Rectangle
         EcsPosition3 pos2 = { 1.5f, .0f, .0f }; // 位于x轴正方向2.0的位置
         EcsRectangle rect2 = { .5f, .5f }; // 宽度和高度为1.0
         EcsRgb color2 = { 0.0f, .0f, 1.f, 1.0f }; // 绿色
@@ -2105,7 +2135,7 @@ void _sg_initialize(int w, int h)
 
     const float box_size = 0.5f;
     const float spacing = 2.0f;
-    const int grid_half_size = 100;  // 100 个 box 对称排列的半径
+    const int grid_half_size = 1;  // 100 个 box 对称排列的半径
 
     for (int x = -grid_half_size; x < grid_half_size; x++) {
         for (int y = -grid_half_size; y < grid_half_size; y++) {
