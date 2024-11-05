@@ -8,6 +8,9 @@
 #include <cglm.h>
 #include <string>
 #include <sstream>
+
+#include <chrono>
+
 #ifdef JUCE_WINDOWS
 
 #include <Windows.h>
@@ -878,7 +881,6 @@ sg_pipeline init_pipeline() {
         "  vec4 specular = vec4(specular_power * pow(r_dot_v, shininess) * dot_n_l * u_light_color, 1.0);\n"
         "  specular = clamp(specular, 0.0, 1.0);\n"
         "  frag_color =  emissive + ambient + diffuse + specular;\n"
-        " // frag_color =vec4(specular_power);\n"
         "}\n";
 
     sg_shader shd = sg_make_shader(&shader_desc);
@@ -1766,7 +1768,7 @@ void _sg_initialize(int w, int h)
 
         // 创建相机实体
         EcsCamera camera = {};
-        vec3 position = { 0.0f, 0.0f, -5.0f };
+        vec3 position = { 0.0f, 0.0f, -50.0f };
         vec3 lookat = { 0.0f, 0.0f, 0.0f };
         vec3 up = { 0.0f, 1.0f, 0.0f };
 
@@ -1867,6 +1869,40 @@ void _sg_initialize(int w, int h)
         .each([](flecs::entity e, SokolBuffer& b) {
               SokolAttachBuffer(e, b);
             });
+
+
+
+
+
+ 
+        world.system<EcsCamera>()
+            .kind(flecs::OnUpdate)
+            .each([](flecs::entity e, EcsCamera& camera) {
+            // 每秒 60 度，换算成弧度每秒
+            const float rotation_speed = glm_rad(60.0f);
+
+            // 获取时间增量 (delta time)
+            using clock = std::chrono::high_resolution_clock;
+            static auto last_time = clock::now();
+            auto now = clock::now();
+            float delta_time = std::chrono::duration<float>(now - last_time).count();
+            last_time = now;
+
+            // 累积旋转角度
+            static float accumulated_angle = 0.0f;
+            accumulated_angle += rotation_speed * delta_time;
+
+            // 设置旋转半径 (相机到旋转中心的距离)
+            float radius = glm_vec3_norm(camera.position);
+
+            // 根据累积角度计算新的相机位置
+            camera.position[0] = 50 * cos(accumulated_angle);
+
+
+                });
+ 
+
+  
 
 
 
@@ -1992,9 +2028,6 @@ void _sg_initialize(int w, int h)
 
 
 
-
-
-
         sg_commit();
  
             });
@@ -2013,7 +2046,7 @@ void _sg_initialize(int w, int h)
 
         };
 
-    if(1)
+    if(0)
     {
 
    
@@ -2031,7 +2064,7 @@ void _sg_initialize(int w, int h)
             .set<EcsTransform3>(transform1);
     }
 
-    if(1)
+    if(0)
     {
         // 创建第二个矩形实体
         EcsPosition3 pos2 = { 1.5f, .0f, .0f }; // 位于x轴正方向2.0的位置
@@ -2053,9 +2086,9 @@ void _sg_initialize(int w, int h)
     if(1)
     {
         // 创建第二个矩形实体
-        EcsPosition3 pos2 = { .5f, -1.5f, .0f }; // 位于x轴正方向2.0的位置
+        EcsPosition3 pos2 = { .5f, .2f, .0f }; // 位于x轴正方向2.0的位置
         EcsBox box = { .5f, .5f , .5}; // 宽度和高度为1.0
-        EcsRgb color2 = { 1.f, 1.f, 0.0f, 1.0f }; // 绿色
+        EcsRgb color2 = { 1.f, 1.1f, 0.0f, 1.0f }; // 绿色
         EcsTransform3 transform2;
         init_transform(transform2, pos2);
 
@@ -2066,6 +2099,31 @@ void _sg_initialize(int w, int h)
             .set<EcsTransform3>(transform2)
             .add(HasMaterial, shiny_material);
 
+    }
+
+   
+
+    const float box_size = 0.5f;
+    const float spacing = 2.0f;
+    const int grid_half_size = 100;  // 100 个 box 对称排列的半径
+
+    for (int x = -grid_half_size; x < grid_half_size; x++) {
+        for (int y = -grid_half_size; y < grid_half_size; y++) {
+            EcsPosition3 pos = { x * spacing, y * spacing, 0.0f };
+            EcsBox box = { box_size, box_size, box_size };
+            EcsRgb color = { 1.f, 1.1f, 0.0f, 1.0f };  // 设置 box 的颜色
+            EcsTransform3 transform;
+            glm_mat4_identity(transform.value);
+            vec3 translation = { pos.x, pos.y, pos.z };
+            glm_translate(transform.value, translation);
+
+            world.entity()
+                .set<EcsPosition3>(pos)
+                .set<EcsBox>(box)
+                .set<EcsRgb>(color)
+                .set<EcsTransform3>(transform)
+                .add(HasMaterial, shiny_material);
+        }
     }
 
 }
@@ -2085,7 +2143,7 @@ void _sg_shutdown()
 
 
 
-#include <chrono>
+
 float calculateOscillatingY(float amplitude, float speed) {
     // 获取当前时间
     using clock = std::chrono::high_resolution_clock;
