@@ -367,6 +367,10 @@ struct EcsCanvas {
 
     sg_sampler smp;
 
+
+
+    sg_pipeline pip_text;
+    sg_pass_action pass_action_text;
 };
 
 
@@ -376,6 +380,7 @@ struct EcsCanvas {
 
 struct RectangleTag {};
 struct BoxTag {};
+struct TextTag {};
 
 
 struct SokolBuffer {
@@ -1506,7 +1511,7 @@ void SokolAttachBox(flecs::entity e, SokolBuffer& b) {
     return;
 }
 
-
+//todo: need process image?
 void SokolAttachText(flecs::entity e, SokolBuffer& b) {
 
     attachGeometry<EcsRectangle>(b, rectangle_query, [](const EcsRectangle* rect, mat4& transform) {
@@ -1525,12 +1530,16 @@ void SokolAttachBuffer(flecs::entity e, SokolBuffer& b) {
     {
         SokolAttachRect(e, b);
     }
-
-
-    if (e.has<BoxTag  >())
+    else if (e.has<BoxTag>())
     {
         SokolAttachBox(e, b);
     }
+    else if (e.has<TextTag>())
+    {
+        SokolAttachText(e, b);
+    }
+
+
 
 }
 
