@@ -6,6 +6,9 @@
 
 #include "flecs.h"
 #include <cglm.h>
+
+#include <functional>
+
 #include <string>
 #include <sstream>
 
@@ -1288,32 +1291,31 @@ void init_queries(flecs::world& world) {
     //    .build();
 }
 
+template<typename GeometryComponent>
+void attachGeometry(SokolBuffer& b, flecs::query<>& query, std::function<void(const GeometryComponent*, mat4&)> applyScaling) {
 
-
-void SokolAttachRect(flecs::entity e, SokolBuffer& b) {
-
-    if (!rectangle_query.changed()) {
-                return;
+    if (!query.changed()) {
+        return;
     }
-    //printf("\n rectangle_query changed \n");
+
     int32_t count = 0;
-    rectangle_query.each([&](flecs::entity) {
+    query.each([&](flecs::entity) {
         count++;
         });
 
     if (count == 0) {
         b.instance_count = 0;
-            return;
+        return;
     }
 
-
-    // 如果需要，重新分配应用层缓冲区
+    // Reallocate application-level buffers if needed
     if (b.instance_capacity < count) {
-        b.instance_capacity = count * 2; // 增加容量，避免频繁分配
+        b.instance_capacity = count * 2; // Increase capacity to avoid frequent reallocations
         b.colors = (ecs_rgba_t*)ecs_os_realloc(b.colors, b.instance_capacity * sizeof(ecs_rgba_t));
         b.transforms = (mat4*)ecs_os_realloc(b.transforms, b.instance_capacity * sizeof(mat4));
         b.materials = (float*)ecs_os_realloc(b.materials, b.instance_capacity * sizeof(float));
 
+        // Recreate GPU buffers
         {
             if (b.color_buffer.id != SG_INVALID_ID) {
                 sg_destroy_buffer(b.color_buffer);
@@ -1334,7 +1336,6 @@ void SokolAttachRect(flecs::entity e, SokolBuffer& b) {
             b.transform_buffer = sg_make_buffer(&transform_buf_desc);
         }
 
-
         {
             if (b.material_buffer.id != SG_INVALID_ID) {
                 sg_destroy_buffer(b.material_buffer);
@@ -1343,24 +1344,19 @@ void SokolAttachRect(flecs::entity e, SokolBuffer& b) {
             material_buf_desc.size = b.instance_capacity * sizeof(uint32_t);
             material_buf_desc.usage = SG_USAGE_DYNAMIC;
             b.material_buffer = sg_make_buffer(&material_buf_desc);
-
         }
-
     }
-
-
-
 
     size_t colors_size = count * sizeof(ecs_rgba_t);
     size_t transforms_size = count * sizeof(mat4);
     size_t materials_size = count * sizeof(float);
 
-
     int32_t cursor = 0;
 
-    rectangle_query.each([&](flecs::entity ent) {
-       
-        const EcsRectangle* rect = ent.get< EcsRectangle>();
+    query.each([&](flecs::entity ent) {
+     
+ 
+        const GeometryComponent* geometry = ent.get< GeometryComponent>();
 
         const EcsRgb* color = ent.get< EcsRgb>();
 
@@ -1368,44 +1364,30 @@ void SokolAttachRect(flecs::entity e, SokolBuffer& b) {
 
         const EcsTransform3* transform = ent.get< EcsTransform3>();
 
-       
+
+        // Copy the transform matrix
         glm_mat4_copy(const_cast<mat4&>(transform->value), b.transforms[cursor]);
 
+        // Apply scaling using the provided lambda function
+        applyScaling(geometry, b.transforms[cursor]);
 
-        vec3 scale = { rect->width, rect->height, 1.0f };
-        glm_scale(b.transforms[cursor], scale);
-
-
-
-
-
-
+        // Get material
         auto HasMaterialentity = world.lookup("HasMaterial");
-
-        if (HasMaterialentity)
-        {
+        if (HasMaterialentity) {
             auto material = ent.target(HasMaterialentity);
-            if (material)
-            {
+            if (material) {
                 const SokolMaterial* sm = material.get<SokolMaterial>();
                 uint32_t material_id = sm ? sm->material_id : 0;
                 b.materials[cursor] = material_id;
-                
             }
         }
-
-
-
-
-  
 
         cursor++;
         });
 
     b.instance_count = count;
 
-
-
+    // Update GPU buffers
     sg_update_buffer(b.color_buffer, { .ptr = b.colors, .size = colors_size });
     sg_update_buffer(b.transform_buffer, { .ptr = b.transforms, .size = transforms_size });
     sg_update_buffer(b.material_buffer, { .ptr = b.materials, .size = materials_size });
@@ -1413,126 +1395,28 @@ void SokolAttachRect(flecs::entity e, SokolBuffer& b) {
 
 
 
+void SokolAttachRect(flecs::entity e, SokolBuffer& b) {
+
+    attachGeometry<EcsRectangle>(b, rectangle_query, [](const EcsRectangle* rect, mat4& transform) {
+        vec3 scale = { rect->width, rect->height, 1.0f };
+        glm_scale(transform, scale);
+        });
+
+    return;
+  
+}
+
+
 
 
 void SokolAttachBox(flecs::entity e, SokolBuffer& b) {
 
-
-    if (!box_query.changed()) {
-        return;
-    }
-    printf("\n box_query changed \n");
-    int32_t count = 0;
-    box_query.each([&](flecs::entity) {
-        count++;
-        });
-
-    if (count == 0) {
-        b.instance_count = 0;
-        return;
-    }
-
-
-
-    // 如果需要，重新分配应用层缓冲区
-    if (b.instance_capacity < count) {
-        b.instance_capacity = count * 2; // 增加容量，避免频繁分配
-        b.colors = (ecs_rgba_t*)ecs_os_realloc(b.colors, b.instance_capacity * sizeof(ecs_rgba_t));
-        b.transforms = (mat4*)ecs_os_realloc(b.transforms, b.instance_capacity * sizeof(mat4));
-        b.materials = (float*)ecs_os_realloc(b.materials, b.instance_capacity * sizeof(float));
-        
-
-
-        {
-            if (b.color_buffer.id != SG_INVALID_ID) {
-                sg_destroy_buffer(b.color_buffer);
-            }
-            sg_buffer_desc color_buf_desc = {};
-            color_buf_desc.size = b.instance_capacity * sizeof(ecs_rgba_t);
-            color_buf_desc.usage = SG_USAGE_DYNAMIC;
-            b.color_buffer = sg_make_buffer(&color_buf_desc);
-        }
-
-        {
-            if (b.transform_buffer.id != SG_INVALID_ID) {
-                sg_destroy_buffer(b.transform_buffer);
-            }
-            sg_buffer_desc transform_buf_desc = {};
-            transform_buf_desc.size = b.instance_capacity * sizeof(mat4);
-            transform_buf_desc.usage = SG_USAGE_DYNAMIC;
-            b.transform_buffer = sg_make_buffer(&transform_buf_desc);
-        }
-
-
-        {
-            if (b.material_buffer.id != SG_INVALID_ID) {
-                sg_destroy_buffer(b.material_buffer);
-            }
-            sg_buffer_desc material_buf_desc = {};
-            material_buf_desc.size = b.instance_capacity * sizeof(uint32_t);
-            material_buf_desc.usage = SG_USAGE_DYNAMIC;
-            b.material_buffer = sg_make_buffer(&material_buf_desc);
-
-        }
-    }
-
-    // 分配或重新分配缓冲区
-    size_t colors_size = count * sizeof(ecs_rgba_t);
-    size_t transforms_size = count * sizeof(mat4);
-    size_t materials_size = count * sizeof(float);
- 
-
-    int32_t cursor = 0;
-
-    box_query.each([&](flecs::entity ent) {
-      
-
-        const EcsBox* box = ent.get< EcsBox>();
-
-        const EcsRgb* color = ent.get< EcsRgb>();
-
-        b.colors[cursor] = *color;
-
-        const EcsTransform3* transform = ent.get< EcsTransform3>();
-
-
-        // 复制变换矩阵
-        glm_mat4_copy(const_cast<mat4&>(transform->value), b.transforms[cursor]);
-
-
-        // 应用缩放变换
+    attachGeometry<EcsBox>(b, box_query, [](const EcsBox* box, mat4& transform) {
         vec3 scale = { box->width, box->height, box->depth };
-        glm_scale(b.transforms[cursor], scale);
-
-
-
-
-        auto HasMaterialentity = world.lookup("HasMaterial");
-
-        if (HasMaterialentity)
-        {
-            auto material = ent.target(HasMaterialentity);
-            if (material)
-            {
-                const SokolMaterial* sm = material.get<SokolMaterial>();
-                uint32_t material_id = sm ? sm->material_id : 0;
-                b.materials[cursor] = material_id;
-            }
-        }
-
-
-
-        cursor++;
+        glm_scale(transform, scale);
         });
 
-    b.instance_count = count;
-
-
-
-    sg_update_buffer(b.color_buffer, { .ptr = b.colors, .size = colors_size });
-    sg_update_buffer(b.transform_buffer, { .ptr = b.transforms, .size = transforms_size });
-    sg_update_buffer(b.material_buffer, { .ptr = b.materials, .size = materials_size });
-
+    return;
 }
 
 void SokolAttachBuffer(flecs::entity e, SokolBuffer& b) {
