@@ -282,7 +282,10 @@ struct EcsDirectionalLight {
 
 
 
-
+typedef struct {
+    vec3 position;
+    vec2 uv;
+} Vertex;
 
 
  typedef struct vs_uniforms_t {
@@ -369,6 +372,7 @@ struct EcsCanvas {
 
 
 
+    sg_pass pass_text;
     sg_pipeline pipe_text;
     sg_pass_action pass_action_text;
 };
@@ -866,11 +870,11 @@ sg_pipeline init_text_pipeline() {
         "uniform mat4 u_mat_vp;\n"
         "uniform vec3 u_materials[255];\n"
         "layout(location=0) in vec3 v_position;\n"
-        "layout(location=1) in vec3 v_normal;\n"
-        "layout(location=2) in vec4 i_color;\n"
-        "layout(location=3) in float i_material;\n"
-        "layout(location=4) in mat4 i_mat_m;\n"
-        "layout(location = 5) in vec2 texcoord0;"
+        "layout(location=1) in vec2 v_uv;\n"
+        "layout(location=2) in vec3 v_normal;\n"
+        "layout(location=3) in vec4 i_color;\n"
+        "layout(location=4) in float i_material;\n"
+        "layout(location=5) in mat4 i_mat_m;\n"
         "out vec2 uv;\n"
         "out vec4 position;\n"
         "out vec3 normal;\n"
@@ -886,7 +890,7 @@ sg_pipeline init_text_pipeline() {
         "   uint material_id = uint(i_material);\n"
         "   material = u_materials[material_id];\n"
         "   f_material = i_material;\n"
-        "   uv = texcoord0;\n"
+        "   uv = v_uv;\n"
         "}\n";
 
     // Fragment shader code
@@ -919,6 +923,7 @@ sg_pipeline init_text_pipeline() {
         "  vec4 specular = vec4(specular_power * pow(r_dot_v, shininess) * dot_n_l * u_light_color, 1.0);\n"
         "  specular = clamp(specular, 0.0, 1.0);\n"
         "  frag_color =  emissive + ambient + diffuse + specular;\n"
+        "  //frag_color = color * uv.x;\n"
         "}\n";
 
     sg_shader shd = sg_make_shader(&shader_desc);
@@ -929,10 +934,10 @@ sg_pipeline init_text_pipeline() {
     pipeline_desc.index_type = SG_INDEXTYPE_UINT16;
 
     // Configure buffer layouts
-    pipeline_desc.layout.buffers[0].stride = sizeof(float) * 3; // Vertex positions
+    pipeline_desc.layout.buffers[0].stride = sizeof(Vertex);; // Vertex positions
     pipeline_desc.layout.buffers[0].step_func = SG_VERTEXSTEP_PER_VERTEX;
 
-    pipeline_desc.layout.buffers[1].stride = sizeof(float) * 3; // Normals
+    pipeline_desc.layout.buffers[1].stride = sizeof(vec3); // Normals
     pipeline_desc.layout.buffers[1].step_func = SG_VERTEXSTEP_PER_VERTEX;
 
     pipeline_desc.layout.buffers[2].stride = sizeof(EcsRgb); // Colors
@@ -946,42 +951,42 @@ sg_pipeline init_text_pipeline() {
 
     // Configure vertex attributes
     pipeline_desc.layout.attrs[0].buffer_index = 0; // Position
-    pipeline_desc.layout.attrs[0].offset = 0;
+    pipeline_desc.layout.attrs[0].offset = offsetof(Vertex, position);
     pipeline_desc.layout.attrs[0].format = SG_VERTEXFORMAT_FLOAT3;
 
-    pipeline_desc.layout.attrs[1].buffer_index = 1; // Normal
-    pipeline_desc.layout.attrs[1].offset = 0;
-    pipeline_desc.layout.attrs[1].format = SG_VERTEXFORMAT_FLOAT3;
+    pipeline_desc.layout.attrs[1].buffer_index = 0; // UV
+    pipeline_desc.layout.attrs[1].offset = offsetof(Vertex, uv);
+    pipeline_desc.layout.attrs[1].format = SG_VERTEXFORMAT_FLOAT2;
 
-    pipeline_desc.layout.attrs[2].buffer_index = 2; // Color
+    pipeline_desc.layout.attrs[2].buffer_index = 1; // Normal
     pipeline_desc.layout.attrs[2].offset = 0;
-    pipeline_desc.layout.attrs[2].format = SG_VERTEXFORMAT_FLOAT4;
+    pipeline_desc.layout.attrs[2].format = SG_VERTEXFORMAT_FLOAT3;
 
-    pipeline_desc.layout.attrs[3].buffer_index = 3; // Material ID
+    pipeline_desc.layout.attrs[3].buffer_index = 2; // Color
     pipeline_desc.layout.attrs[3].offset = 0;
-    pipeline_desc.layout.attrs[3].format = SG_VERTEXFORMAT_FLOAT;
+    pipeline_desc.layout.attrs[3].format = SG_VERTEXFORMAT_FLOAT4;
+
+    pipeline_desc.layout.attrs[4].buffer_index = 3; // Material ID
+    pipeline_desc.layout.attrs[4].offset = 0;
+    pipeline_desc.layout.attrs[4].format = SG_VERTEXFORMAT_FLOAT;
 
     // Transform matrix attributes
-    pipeline_desc.layout.attrs[4].buffer_index = 4;
-    pipeline_desc.layout.attrs[4].offset = 0;
-    pipeline_desc.layout.attrs[4].format = SG_VERTEXFORMAT_FLOAT4;
-
     pipeline_desc.layout.attrs[5].buffer_index = 4;
-    pipeline_desc.layout.attrs[5].offset = 16;
+    pipeline_desc.layout.attrs[5].offset = 0;
     pipeline_desc.layout.attrs[5].format = SG_VERTEXFORMAT_FLOAT4;
 
     pipeline_desc.layout.attrs[6].buffer_index = 4;
-    pipeline_desc.layout.attrs[6].offset = 32;
+    pipeline_desc.layout.attrs[6].offset = 16;
     pipeline_desc.layout.attrs[6].format = SG_VERTEXFORMAT_FLOAT4;
 
     pipeline_desc.layout.attrs[7].buffer_index = 4;
-    pipeline_desc.layout.attrs[7].offset = 48;
+    pipeline_desc.layout.attrs[7].offset = 32;
     pipeline_desc.layout.attrs[7].format = SG_VERTEXFORMAT_FLOAT4;
 
+    pipeline_desc.layout.attrs[8].buffer_index = 4;
+    pipeline_desc.layout.attrs[8].offset = 48;
+    pipeline_desc.layout.attrs[8].format = SG_VERTEXFORMAT_FLOAT4;
 
-    pipeline_desc.layout.attrs[8].buffer_index = 5;
-    pipeline_desc.layout.attrs[8].offset = 64;
-    pipeline_desc.layout.attrs[8].format = SG_VERTEXFORMAT_SHORT2N;
 
 
     pipeline_desc.colors[0].pixel_format = SG_PIXELFORMAT_RGBA16F;
@@ -1032,10 +1037,12 @@ sg_pipeline init_pipeline() {
         "uniform mat4 u_mat_vp;\n"
         "uniform vec3 u_materials[255];\n"
         "layout(location=0) in vec3 v_position;\n"
-        "layout(location=1) in vec3 v_normal;\n"
-        "layout(location=2) in vec4 i_color;\n"
-        "layout(location=3) in float i_material;\n"
-        "layout(location=4) in mat4 i_mat_m;\n"
+        "layout(location=1) in vec2 v_uv;\n"
+        "layout(location=2) in vec3 v_normal;\n"
+        "layout(location=3) in vec4 i_color;\n"
+        "layout(location=4) in float i_material;\n"
+        "layout(location=5) in mat4 i_mat_m;\n"
+        "out vec2 uv;\n"
         "out vec4 position;\n"
         "out vec3 normal;\n"
         "out vec4 color;\n"
@@ -1050,6 +1057,7 @@ sg_pipeline init_pipeline() {
         "   uint material_id = uint(i_material);\n"
         "   material = u_materials[material_id];\n"
         "   f_material = i_material;\n"
+        "   uv = v_uv;\n"
         "}\n";
 
     // Fragment shader code
@@ -1064,6 +1072,7 @@ sg_pipeline init_pipeline() {
         "in vec4 color;\n"
         "in vec3 material;\n"
         "in float f_material;\n"
+        "in vec2 uv;\n"
         "out vec4 frag_color;\n"
         "void main() {\n"
         "  float specular_power = material.x;\n"
@@ -1080,6 +1089,7 @@ sg_pipeline init_pipeline() {
         "  vec4 specular = vec4(specular_power * pow(r_dot_v, shininess) * dot_n_l * u_light_color, 1.0);\n"
         "  specular = clamp(specular, 0.0, 1.0);\n"
         "  frag_color =  emissive + ambient + diffuse + specular;\n"
+        "  //frag_color = color * uv.x;\n"
         "}\n";
 
     sg_shader shd = sg_make_shader(&shader_desc);
@@ -1090,10 +1100,10 @@ sg_pipeline init_pipeline() {
     pipeline_desc.index_type = SG_INDEXTYPE_UINT16;
 
     // Configure buffer layouts
-    pipeline_desc.layout.buffers[0].stride = sizeof(float) * 3; // Vertex positions
+    pipeline_desc.layout.buffers[0].stride = sizeof(Vertex);; // Vertex positions
     pipeline_desc.layout.buffers[0].step_func = SG_VERTEXSTEP_PER_VERTEX;
 
-    pipeline_desc.layout.buffers[1].stride = sizeof(float) * 3; // Normals
+    pipeline_desc.layout.buffers[1].stride = sizeof(vec3); // Normals
     pipeline_desc.layout.buffers[1].step_func = SG_VERTEXSTEP_PER_VERTEX;
 
     pipeline_desc.layout.buffers[2].stride = sizeof(EcsRgb); // Colors
@@ -1107,37 +1117,41 @@ sg_pipeline init_pipeline() {
 
     // Configure vertex attributes
     pipeline_desc.layout.attrs[0].buffer_index = 0; // Position
-    pipeline_desc.layout.attrs[0].offset = 0;
+    pipeline_desc.layout.attrs[0].offset = offsetof(Vertex, position);
     pipeline_desc.layout.attrs[0].format = SG_VERTEXFORMAT_FLOAT3;
 
-    pipeline_desc.layout.attrs[1].buffer_index = 1; // Normal
-    pipeline_desc.layout.attrs[1].offset = 0;
-    pipeline_desc.layout.attrs[1].format = SG_VERTEXFORMAT_FLOAT3;
+    pipeline_desc.layout.attrs[1].buffer_index = 0; // UV
+    pipeline_desc.layout.attrs[1].offset = offsetof(Vertex, uv);
+    pipeline_desc.layout.attrs[1].format = SG_VERTEXFORMAT_FLOAT2;
 
-    pipeline_desc.layout.attrs[2].buffer_index = 2; // Color
+    pipeline_desc.layout.attrs[2].buffer_index = 1; // Normal
     pipeline_desc.layout.attrs[2].offset = 0;
-    pipeline_desc.layout.attrs[2].format = SG_VERTEXFORMAT_FLOAT4;
+    pipeline_desc.layout.attrs[2].format = SG_VERTEXFORMAT_FLOAT3;
 
-    pipeline_desc.layout.attrs[3].buffer_index = 3; // Material ID
+    pipeline_desc.layout.attrs[3].buffer_index = 2; // Color
     pipeline_desc.layout.attrs[3].offset = 0;
-    pipeline_desc.layout.attrs[3].format = SG_VERTEXFORMAT_FLOAT;
+    pipeline_desc.layout.attrs[3].format = SG_VERTEXFORMAT_FLOAT4;
+
+    pipeline_desc.layout.attrs[4].buffer_index = 3; // Material ID
+    pipeline_desc.layout.attrs[4].offset = 0;
+    pipeline_desc.layout.attrs[4].format = SG_VERTEXFORMAT_FLOAT;
 
     // Transform matrix attributes
-    pipeline_desc.layout.attrs[4].buffer_index = 4;
-    pipeline_desc.layout.attrs[4].offset = 0;
-    pipeline_desc.layout.attrs[4].format = SG_VERTEXFORMAT_FLOAT4;
-
     pipeline_desc.layout.attrs[5].buffer_index = 4;
-    pipeline_desc.layout.attrs[5].offset = 16;
+    pipeline_desc.layout.attrs[5].offset = 0;
     pipeline_desc.layout.attrs[5].format = SG_VERTEXFORMAT_FLOAT4;
 
     pipeline_desc.layout.attrs[6].buffer_index = 4;
-    pipeline_desc.layout.attrs[6].offset = 32;
+    pipeline_desc.layout.attrs[6].offset = 16;
     pipeline_desc.layout.attrs[6].format = SG_VERTEXFORMAT_FLOAT4;
 
     pipeline_desc.layout.attrs[7].buffer_index = 4;
-    pipeline_desc.layout.attrs[7].offset = 48;
+    pipeline_desc.layout.attrs[7].offset = 32;
     pipeline_desc.layout.attrs[7].format = SG_VERTEXFORMAT_FLOAT4;
+
+    pipeline_desc.layout.attrs[8].buffer_index = 4;
+    pipeline_desc.layout.attrs[8].offset = 48;
+    pipeline_desc.layout.attrs[8].format = SG_VERTEXFORMAT_FLOAT4;
 
 
     pipeline_desc.colors[0].pixel_format = SG_PIXELFORMAT_RGBA16F;
@@ -1189,7 +1203,7 @@ return sg_make_pipeline(&(sg_pipeline_desc) {
 
 static
 void compute_flat_normals(
-    vec3* vertices,
+    Vertex* vertices, 
     uint16_t* indices,
     int32_t count,
     vec3* normals_out)
@@ -1197,8 +1211,8 @@ void compute_flat_normals(
     int32_t v;
     for (v = 0; v < count; v += 3) {
         vec3 vec1, vec2, normal;
-        glm_vec3_sub(vertices[indices[v + 0]], vertices[indices[v + 1]], vec1);
-        glm_vec3_sub(vertices[indices[v + 0]], vertices[indices[v + 2]], vec2);
+        glm_vec3_sub(vertices[indices[v + 0]].position, vertices[indices[v + 1]].position, vec1);
+        glm_vec3_sub(vertices[indices[v + 0]].position, vertices[indices[v + 2]].position, vec2);
         glm_vec3_crossn(vec2, vec1, normal);
 
         glm_vec3_copy(normal, normals_out[indices[v + 0]]);
@@ -1217,12 +1231,13 @@ void init_rect_buffers(flecs::world& ecs) {
     auto b = rect_buf.get_mut<SokolBuffer>();
     ecs_assert(b != nullptr, ECS_INTERNAL_ERROR, NULL);
 
-    vec3 vertices[] = {
-        {-0.5f, -0.5f, 0.0f},
-        { 0.5f, -0.5f, 0.0f},
-        { 0.5f,  0.5f, 0.0f},
-        {-0.5f,  0.5f, 0.0f}
+    Vertex vertices[] = {
+        { {-0.5f, -0.5f, 0.0f}, {0.0f, 0.0f} },
+        { { 0.5f, -0.5f, 0.0f}, {1.0f, 0.0f} },
+        { { 0.5f,  0.5f, 0.0f}, {1.0f, 1.0f} },
+        { {-0.5f,  0.5f, 0.0f}, {0.0f, 1.0f} }
     };
+
 
     uint16_t indices[] = {
         0, 1, 2,
@@ -1282,11 +1297,11 @@ void init_text_buffers(flecs::world& ecs) {
     auto b = rect_buf.get_mut<SokolBuffer>();
     ecs_assert(b != nullptr, ECS_INTERNAL_ERROR, NULL);
 
-    vec3 vertices[] = {
-        {-0.5f, -0.5f, 0.0f},
-        { 0.5f, -0.5f, 0.0f},
-        { 0.5f,  0.5f, 0.0f},
-        {-0.5f,  0.5f, 0.0f}
+    Vertex vertices[] = {
+        { {-0.5f, -0.5f, 0.0f}, {0.0f, 0.0f} },
+        { { 0.5f, -0.5f, 0.0f}, {1.0f, 0.0f} },
+        { { 0.5f,  0.5f, 0.0f}, {1.0f, 1.0f} },
+        { {-0.5f,  0.5f, 0.0f}, {0.0f, 1.0f} }
     };
 
 
@@ -1347,37 +1362,44 @@ void init_box_buffers(flecs::world& ecs) {
     ecs_assert(b != nullptr, ECS_INTERNAL_ERROR, NULL);
 
 
-    vec3 vertices[] = {
-       {-0.5f, -0.5f, -0.5f}, // Back   
-       { 0.5f, -0.5f, -0.5f},
-       { 0.5f,  0.5f, -0.5f},
-       {-0.5f,  0.5f, -0.5f},
+    Vertex vertices[] = {
+        // Back
+        { {-0.5f, -0.5f, -0.5f}, {0.0f, 0.0f} },
+        { { 0.5f, -0.5f, -0.5f}, {1.0f, 0.0f} },
+        { { 0.5f,  0.5f, -0.5f}, {1.0f, 1.0f} },
+        { {-0.5f,  0.5f, -0.5f}, {0.0f, 1.0f} },
 
-       {-0.5f, -0.5f,  0.5f}, // Front  
-       { 0.5f, -0.5f,  0.5f},
-       { 0.5f,  0.5f,  0.5f},
-       {-0.5f,  0.5f,  0.5f},
+        // Front
+        { {-0.5f, -0.5f,  0.5f}, {0.0f, 0.0f} },
+        { { 0.5f, -0.5f,  0.5f}, {1.0f, 0.0f} },
+        { { 0.5f,  0.5f,  0.5f}, {1.0f, 1.0f} },
+        { {-0.5f,  0.5f,  0.5f}, {0.0f, 1.0f} },
 
-       {-0.5f, -0.5f, -0.5f}, // Left   
-       {-0.5f,  0.5f, -0.5f},
-       {-0.5f,  0.5f,  0.5f},
-       {-0.5f, -0.5f,  0.5f},
+        // Left
+        { {-0.5f, -0.5f, -0.5f}, {0.0f, 0.0f} },
+        { {-0.5f,  0.5f, -0.5f}, {1.0f, 0.0f} },
+        { {-0.5f,  0.5f,  0.5f}, {1.0f, 1.0f} },
+        { {-0.5f, -0.5f,  0.5f}, {0.0f, 1.0f} },
 
-       { 0.5f, -0.5f, -0.5f}, // Right   
-       { 0.5f,  0.5f, -0.5f},
-       { 0.5f,  0.5f,  0.5f},
-       { 0.5f, -0.5f,  0.5f},
+        // Right
+        { { 0.5f, -0.5f, -0.5f}, {0.0f, 0.0f} },
+        { { 0.5f,  0.5f, -0.5f}, {1.0f, 0.0f} },
+        { { 0.5f,  0.5f,  0.5f}, {1.0f, 1.0f} },
+        { { 0.5f, -0.5f,  0.5f}, {0.0f, 1.0f} },
 
-       {-0.5f, -0.5f, -0.5f}, // Bottom   
-       {-0.5f, -0.5f,  0.5f},
-       { 0.5f, -0.5f,  0.5f},
-       { 0.5f, -0.5f, -0.5f},
+        // Bottom
+        { {-0.5f, -0.5f, -0.5f}, {0.0f, 0.0f} },
+        { {-0.5f, -0.5f,  0.5f}, {1.0f, 0.0f} },
+        { { 0.5f, -0.5f,  0.5f}, {1.0f, 1.0f} },
+        { { 0.5f, -0.5f, -0.5f}, {0.0f, 1.0f} },
 
-       {-0.5f,  0.5f, -0.5f}, // Top   
-       {-0.5f,  0.5f,  0.5f},
-       { 0.5f,  0.5f,  0.5f},
-       { 0.5f,  0.5f, -0.5f},
+        // Top
+        { {-0.5f,  0.5f, -0.5f}, {0.0f, 0.0f} },
+        { {-0.5f,  0.5f,  0.5f}, {1.0f, 0.0f} },
+        { { 0.5f,  0.5f,  0.5f}, {1.0f, 1.0f} },
+        { { 0.5f,  0.5f, -0.5f}, {0.0f, 1.0f} }
     };
+
 
 
     {
@@ -1981,7 +2003,7 @@ void _sg_initialize(int w, int h)
 
         // 创建相机实体
         EcsCamera camera = {};
-        vec3 position = { 0.0f, 0.0f, -50.0f };
+        vec3 position = { 0.0f, 0.0f, -10.0f };
         vec3 lookat = { 0.0f, 0.0f, 0.0f };
         vec3 up = { 0.0f, 1.0f, 0.0f };
 
