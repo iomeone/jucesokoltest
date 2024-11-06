@@ -743,7 +743,17 @@ sg_pass_action init_pass_action(const EcsCanvas* canvas) {
     return pass_action;
 }
 
- 
+static
+sg_pass_action init_pass_text_action() {
+
+    sg_pass_action pass_action = {};
+    pass_action.colors[0].load_action = SG_LOADACTION_LOAD;
+
+    return pass_action;
+}
+
+
+
 static
 sg_pass_action init_tex_pass_action() {
 
@@ -821,7 +831,7 @@ static sg_pipeline init_texture_pipeline() {
 
 
 
-sg_pipeline init_text_pipeline() {
+sg_pipeline init_pipeline_text() {
   
     sg_shader_desc shader_desc = {};
 
@@ -2084,7 +2094,9 @@ void _sg_initialize(int w, int h)
 
 
     {
-        sokol_canvas.pipe_text = init_text_pipeline();
+
+        sokol_canvas.pass_action_text = init_pass_text_action();
+        sokol_canvas.pipe_text = init_pipeline_text();
         
 
 
