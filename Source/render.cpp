@@ -287,11 +287,6 @@ typedef struct {
     vec2 uv;
 } Vertex;
 
-typedef struct {
-    vec3 position;
-    vec2 uv;
-    vec2 uv_text;
-} VertexText;
 
 
  typedef struct vs_uniforms_t {
@@ -390,7 +385,6 @@ struct EcsCanvas {
 
 struct RectangleTag {};
 struct BoxTag {};
-struct TextTag {};
 
 
 struct SokolBuffer {
@@ -457,72 +451,84 @@ struct SokolBuffer {
 };
 
 
-//
-//
-//
-//struct SokolBufferText {
-//    // GPU buffers
-//    sg_buffer vertex_buffer;        // Geometry (static)
-//    sg_buffer normal_buffer;
-//    sg_buffer index_buffer;         // Indices (static)
-//    sg_buffer color_buffer;         // Color (per instance)
-//    sg_buffer transform_buffer;     // Transform (per instance)
-//
-//    sg_buffer material_buffer;      // Material IDs (per instance)
-//
-//    // Application-cached buffers
-//    EcsRgb* colors;
-//    mat4* transforms;
-//    float* materials;
-//
-//
-//    // Number of instances
-//    int32_t instance_count;
-//
-//
-//    int32_t instance_capacity;
-//
-//    // Number of indices
-//    int32_t index_count;
-//
-//    // Constructor
-//    SokolBufferText()
-//        : colors(nullptr), transforms(nullptr), materials(nullptr), instance_count(0), instance_capacity(0), index_count(0) {
-//        vertex_buffer = { 0 };
-//        index_buffer = { 0 };
-//        color_buffer = { 0 };
-//        transform_buffer = { 0 };
-//        material_buffer = { 0 };
-//    }
-//
-//    void releaseBuffer()
-//    {
-//
-//        if (color_buffer.id != SG_INVALID_ID) {
-//            sg_destroy_buffer(color_buffer);
-//        }
-//        if (transform_buffer.id != SG_INVALID_ID) {
-//            sg_destroy_buffer(transform_buffer);
-//        }
-//
-//        if (material_buffer.id != SG_INVALID_ID) {
-//            sg_destroy_buffer(material_buffer);
-//        }
-//
-//    }
-//
-//    ~SokolBufferText() {
-//        if (colors)
-//            ecs_os_free(colors);
-//        if (transforms)
-//            ecs_os_free(transforms);
-//        if (materials)
-//            ecs_os_free(materials);
-//    }
-//
-//
-//};
-//
+
+
+
+struct SokolBufferText {
+    // GPU buffers
+    sg_buffer vertex_buffer;        // Geometry (static)
+    sg_buffer normal_buffer;
+    sg_buffer index_buffer;         // Indices (static)
+    sg_buffer color_buffer;         // Color (per instance)
+    sg_buffer transform_buffer;     // Transform (per instance)
+
+    sg_buffer material_buffer;      // Material IDs (per instance)
+
+    // Application-cached buffers
+    EcsRgb* colors;
+    mat4* transforms;
+    float* materials;
+
+
+    // Number of instances
+    int32_t instance_count;
+
+
+    int32_t instance_capacity;
+
+    // Number of indices
+    int32_t index_count;
+
+
+    vec2* uv_texts;
+    sg_buffer uv_text_buffer;
+
+
+    // Constructor
+    SokolBufferText()
+        : colors(nullptr), transforms(nullptr), materials(nullptr), uv_texts(nullptr), instance_count(0), instance_capacity(0), index_count(0) {
+        vertex_buffer = { 0 };
+        index_buffer = { 0 };
+        color_buffer = { 0 };
+        transform_buffer = { 0 };
+        material_buffer = { 0 };
+        uv_text_buffer = { 0 };
+    }
+
+    void releaseBuffer()
+    {
+
+        if (color_buffer.id != SG_INVALID_ID) {
+            sg_destroy_buffer(color_buffer);
+        }
+        if (transform_buffer.id != SG_INVALID_ID) {
+            sg_destroy_buffer(transform_buffer);
+        }
+
+        if (material_buffer.id != SG_INVALID_ID) {
+            sg_destroy_buffer(material_buffer);
+        }
+
+        if (uv_text_buffer.id != SG_INVALID_ID) {
+            sg_destroy_buffer(uv_text_buffer);
+        }
+
+    }
+
+    ~SokolBufferText() {
+        if (colors)
+            ecs_os_free(colors);
+        if (transforms)
+            ecs_os_free(transforms);
+        if (materials)
+            ecs_os_free(materials);
+        if (uv_texts)
+            ecs_os_free(uv_texts);
+    }
+
+
+};
+
 
 
 
@@ -1013,7 +1019,7 @@ sg_pipeline init_pipeline_text() {
     pipeline_desc.index_type = SG_INDEXTYPE_UINT16;
 
     // Configure buffer layouts
-    pipeline_desc.layout.buffers[0].stride = sizeof(VertexText);; // Vertex positions
+    pipeline_desc.layout.buffers[0].stride = sizeof(Vertex);; // Vertex positions
     pipeline_desc.layout.buffers[0].step_func = SG_VERTEXSTEP_PER_VERTEX;
 
     pipeline_desc.layout.buffers[1].stride = sizeof(vec3); // Normals
@@ -1025,51 +1031,60 @@ sg_pipeline init_pipeline_text() {
     pipeline_desc.layout.buffers[3].stride = sizeof(float); // Material IDs
     pipeline_desc.layout.buffers[3].step_func = SG_VERTEXSTEP_PER_INSTANCE;
 
-    pipeline_desc.layout.buffers[4].stride = sizeof(EcsTransform3); // Transforms
+    pipeline_desc.layout.buffers[4].stride = sizeof(vec2); // uv_text
     pipeline_desc.layout.buffers[4].step_func = SG_VERTEXSTEP_PER_INSTANCE;
+
+    pipeline_desc.layout.buffers[5].stride = sizeof(EcsTransform3); // Transforms
+    pipeline_desc.layout.buffers[5].step_func = SG_VERTEXSTEP_PER_INSTANCE;
+
+
+
 
     // Configure vertex attributes
     pipeline_desc.layout.attrs[0].buffer_index = 0; // Position
-    pipeline_desc.layout.attrs[0].offset = offsetof(VertexText, position);
+    pipeline_desc.layout.attrs[0].offset = offsetof(Vertex, position);
     pipeline_desc.layout.attrs[0].format = SG_VERTEXFORMAT_FLOAT3;
 
     pipeline_desc.layout.attrs[1].buffer_index = 0; // UV
-    pipeline_desc.layout.attrs[1].offset = offsetof(VertexText, uv);
+    pipeline_desc.layout.attrs[1].offset = offsetof(Vertex, uv);
     pipeline_desc.layout.attrs[1].format = SG_VERTEXFORMAT_FLOAT2;
 
 
-    pipeline_desc.layout.attrs[2].buffer_index = 0; // uv_text
-    pipeline_desc.layout.attrs[2].offset = offsetof(VertexText, uv_text);
-    pipeline_desc.layout.attrs[2].format = SG_VERTEXFORMAT_FLOAT2;
 
 
 
-    pipeline_desc.layout.attrs[3].buffer_index = 1; // Normal
+
+    pipeline_desc.layout.attrs[2].buffer_index = 1; // Normal
+    pipeline_desc.layout.attrs[2].offset = 0;
+    pipeline_desc.layout.attrs[2].format = SG_VERTEXFORMAT_FLOAT3;
+
+    pipeline_desc.layout.attrs[3].buffer_index = 2; // Color
     pipeline_desc.layout.attrs[3].offset = 0;
-    pipeline_desc.layout.attrs[3].format = SG_VERTEXFORMAT_FLOAT3;
+    pipeline_desc.layout.attrs[3].format = SG_VERTEXFORMAT_FLOAT4;
 
-    pipeline_desc.layout.attrs[4].buffer_index = 2; // Color
+    pipeline_desc.layout.attrs[4].buffer_index = 3; // Material ID
     pipeline_desc.layout.attrs[4].offset = 0;
-    pipeline_desc.layout.attrs[4].format = SG_VERTEXFORMAT_FLOAT4;
+    pipeline_desc.layout.attrs[4].format = SG_VERTEXFORMAT_FLOAT;
 
-    pipeline_desc.layout.attrs[5].buffer_index = 3; // Material ID
+
+    pipeline_desc.layout.attrs[5].buffer_index = 4; // uv_text
     pipeline_desc.layout.attrs[5].offset = 0;
-    pipeline_desc.layout.attrs[5].format = SG_VERTEXFORMAT_FLOAT;
+    pipeline_desc.layout.attrs[5].format = SG_VERTEXFORMAT_FLOAT2;
 
     // Transform matrix attributes
-    pipeline_desc.layout.attrs[6].buffer_index = 4;
+    pipeline_desc.layout.attrs[6].buffer_index = 5;
     pipeline_desc.layout.attrs[6].offset = 0;
     pipeline_desc.layout.attrs[6].format = SG_VERTEXFORMAT_FLOAT4;
 
-    pipeline_desc.layout.attrs[7].buffer_index = 4;
+    pipeline_desc.layout.attrs[7].buffer_index = 5;
     pipeline_desc.layout.attrs[7].offset = 16;
     pipeline_desc.layout.attrs[7].format = SG_VERTEXFORMAT_FLOAT4;
 
-    pipeline_desc.layout.attrs[8].buffer_index = 4;
+    pipeline_desc.layout.attrs[8].buffer_index = 5;
     pipeline_desc.layout.attrs[8].offset = 32;
     pipeline_desc.layout.attrs[8].format = SG_VERTEXFORMAT_FLOAT4;
 
-    pipeline_desc.layout.attrs[9].buffer_index = 4;
+    pipeline_desc.layout.attrs[9].buffer_index = 5;
     pipeline_desc.layout.attrs[9].offset = 48;
     pipeline_desc.layout.attrs[9].format = SG_VERTEXFORMAT_FLOAT4;
 
@@ -1084,7 +1099,6 @@ sg_pipeline init_pipeline_text() {
     pipeline_desc.cull_mode = SG_CULLMODE_BACK;
 
     return sg_make_pipeline(&pipeline_desc);
-
 
 }
 
@@ -1305,24 +1319,6 @@ void compute_flat_normals(
         glm_vec3_copy(normal, normals_out[indices[v + 2]]);
     }
 }
-void compute_flat_normals(
-    VertexText* vertices,
-    uint16_t* indices,
-    int32_t count,
-    vec3* normals_out)
-{
-    int32_t v;
-    for (v = 0; v < count; v += 3) {
-        vec3 vec1, vec2, normal;
-        glm_vec3_sub(vertices[indices[v + 0]].position, vertices[indices[v + 1]].position, vec1);
-        glm_vec3_sub(vertices[indices[v + 0]].position, vertices[indices[v + 2]].position, vec2);
-        glm_vec3_crossn(vec2, vec1, normal);
-
-        glm_vec3_copy(normal, normals_out[indices[v + 0]]);
-        glm_vec3_copy(normal, normals_out[indices[v + 1]]);
-        glm_vec3_copy(normal, normals_out[indices[v + 2]]);
-    }
-}
 
 
 static
@@ -1399,11 +1395,11 @@ void init_text_buffers(flecs::world& ecs) {
     auto b = rect_buf.get_mut<SokolBufferText>();
     ecs_assert(b != nullptr, ECS_INTERNAL_ERROR, NULL);
 
-    VertexText vertices[] = {
-        { {-0.5f, -0.5f, 0.0f}, {0.0f, 0.0f} ,{0.0f, 0.0f} },
-        { { 0.5f, -0.5f, 0.0f}, {1.0f, 0.0f} ,{1.0f, 0.0f} },
-        { { 0.5f,  0.5f, 0.0f}, {1.0f, 1.0f} ,{1.0f, 1.0f} },
-        { {-0.5f,  0.5f, 0.0f}, {0.0f, 1.0f} ,{0.0f, 1.0f} }
+    Vertex vertices[] = {
+        { {-0.5f, -0.5f, 0.0f}, {0.0f, 0.0f} },
+        { { 0.5f, -0.5f, 0.0f}, {1.0f, 0.0f} },
+        { { 0.5f,  0.5f, 0.0f}, {1.0f, 1.0f} },
+        { {-0.5f,  0.5f, 0.0f}, {0.0f, 1.0f} }
     };
 
 
@@ -1818,16 +1814,19 @@ void SokolAttachBox(flecs::entity e, SokolBuffer& b) {
 }
 
 //todo: need process image?
-void SokolAttachText(flecs::entity e, SokolBuffer& b) {
+void SokolAttachText(flecs::entity e, SokolBufferText& b) {
 
-    attachGeometry<EcsRectangle>(b, rectangle_query, [](const EcsRectangle* rect, mat4& transform) {
-        vec3 scale = { rect->width, rect->height, 1.0f };
+    attachGeometry<EcsText>(b, text_query, [](const EcsText* text, mat4& transform) {
+        vec3 scale = { text->width, text->height, 1.0f };
             glm_scale(transform, scale);
         });
 
     return;
 
 }
+
+
+
 
 
 void SokolAttachBuffer(flecs::entity e, SokolBuffer& b) {
@@ -1840,17 +1839,17 @@ void SokolAttachBuffer(flecs::entity e, SokolBuffer& b) {
     {
         SokolAttachBox(e, b);
     }
-    else if (e.has<TextTag>())
-    {
-        SokolAttachText(e, b);
-    }
+
 
 
 
 }
 
 
-
+    //else if (e.has<TextTag>())
+    //{
+    //    SokolAttachText(e, b);
+    //}
 static
 void init_uniforms(const EcsCanvas& canvas, vs_uniforms_t& vs_out, fs_uniforms_t& fs_out, const sokol_render_state_t* state)
 {
@@ -2253,6 +2252,11 @@ void _sg_initialize(int w, int h)
             });
 
 
+    world.system<SokolBufferText>()
+        .kind(flecs::PostLoad)
+        .each([](flecs::entity e, SokolBufferText& b) {
+        SokolAttachText(e, b);
+            });
 
 
 
@@ -2325,7 +2329,7 @@ void _sg_initialize(int w, int h)
             populate_materials(world, mat_u);
         }
 
-        bool run1 = false;
+        bool run1 = true;
         if(run1)
         {
             sg_begin_pass(canvas.offscreen_pass);
@@ -2412,7 +2416,7 @@ void _sg_initialize(int w, int h)
         }
  
 
-        if(1)
+        if(0)
         {
              sg_pass pass = {
                  .action = {
