@@ -951,10 +951,10 @@ sg_pipeline init_pipeline_text() {
         "uniform vec3 u_materials[255];\n"
         "layout(location=0) in vec3 v_position;\n"
         "layout(location=1) in vec2 v_uv;\n"
-        "layout(location=2) in vec2 v_uv_text;\n"
-        "layout(location=3) in vec3 v_normal;\n"
-        "layout(location=4) in vec4 i_color;\n"
-        "layout(location=5) in float i_material;\n"
+        "layout(location=2) in vec3 v_normal;\n"
+        "layout(location=3) in vec4 i_color;\n"
+        "layout(location=4) in float i_material;\n"
+        "layout(location=5) in vec2 v_uv_text;\n"
         "layout(location=6) in mat4 i_mat_m;\n"
         "out vec2 uv;\n"
         "out vec2 uv_text;\n"
@@ -1002,7 +1002,7 @@ sg_pipeline init_pipeline_text() {
         "  vec3 v = normalize(u_eye_pos - position.xyz);\n"
         "  vec3 r = reflect(-l, n);\n"
         "  float r_dot_v = max(dot(r, v), 0.0);\n"
-        "  vec4 colorOfTex = texture(tex, uv);\n"
+        "  vec4 colorOfTex = texture(tex, uv_text);\n"
         "  vec4 ambient = vec4(u_light_ambient, 1.0) * (color+colorOfTex);\n"
         "  vec4 diffuse = vec4(u_light_color, 1.0) *  (color+colorOfTex) * dot_n_l;\n"
         "  vec4 specular = vec4(specular_power * pow(r_dot_v, shininess) * dot_n_l * u_light_color, 1.0);\n"
@@ -1687,6 +1687,8 @@ void attachGeometry(BufferType& b, flecs::query<>& query, std::function<void(con
         return;
     }
 
+
+
     int32_t count = 0;
     query.each([&](flecs::entity) {
         count++;
@@ -1696,6 +1698,21 @@ void attachGeometry(BufferType& b, flecs::query<>& query, std::function<void(con
         b.instance_count = 0;
         return;
     }
+
+
+    if constexpr (std::is_same_v<GeometryComponent, EcsRectangle>) {
+
+        printf("\n                  query changed for EcsRectangle. \n");
+    }
+    else if constexpr (std::is_same_v<GeometryComponent, EcsBox>) {
+
+        printf("\n                  query changed for EcsBox. \n");
+    }
+    else if constexpr (std::is_same_v<GeometryComponent, EcsText>) {
+
+        printf("\n                  query changed for EcsText. \n");
+    }
+
 
     // Reallocate application-level buffers if needed
     if (b.instance_capacity < count) {
@@ -2347,7 +2364,7 @@ void _sg_initialize(int w, int h)
             populate_materials(world, mat_u);
         }
 
-        bool run1 = true;
+        bool run1 = 1;
         if(run1)
         {
             sg_begin_pass(canvas.offscreen_pass);
@@ -2434,7 +2451,7 @@ void _sg_initialize(int w, int h)
         }
  
 
-        if(0)
+        if(1)
         {
              sg_pass pass = {
                  .action = {
@@ -2450,13 +2467,21 @@ void _sg_initialize(int w, int h)
 
 
              world.each([&](flecs::entity e, SokolBufferText& buffer) {
+
+
+                 if (buffer.instance_count == 0) {
+                     return;
+                 }
+
+
                  sg_bindings bind = {
                           .vertex_buffers = {
                               buffer.vertex_buffer,
                               buffer.normal_buffer,
                               buffer.color_buffer,
                               buffer.material_buffer,
-                              buffer.transform_buffer
+                              buffer.transform_buffer,
+                              buffer.uv_text_buffer
                           },
                           .index_buffer = buffer.index_buffer,
 
@@ -2516,7 +2541,7 @@ void _sg_initialize(int w, int h)
 
         };
 
-    if(1)
+    if(0)
     {
 
    
@@ -2553,7 +2578,7 @@ void _sg_initialize(int w, int h)
 
     }
 
-    if(1)
+    if(0)
     {
         // 创建第二个矩形实体
         EcsPosition3 pos2 = { .5f, .2f, .0f }; // 位于x轴正方向2.0的位置
@@ -2572,29 +2597,52 @@ void _sg_initialize(int w, int h)
     }
 
    
+    if (0)
+    {
+        const float box_size = 0.5f;
+        const float spacing = 2.0f;
+        const int grid_half_size = 1;  // 100 个 box 对称排列的半径
 
-    const float box_size = 0.5f;
-    const float spacing = 2.0f;
-    const int grid_half_size = 1;  // 100 个 box 对称排列的半径
+        for (int x = -grid_half_size; x < grid_half_size; x++) {
+            for (int y = -grid_half_size; y < grid_half_size; y++) {
+                EcsPosition3 pos = { x * spacing, y * spacing, 0.0f };
+                EcsBox box = { box_size, box_size, box_size };
+                EcsRgb color = { 1.f, 1.1f, 0.0f, 1.0f };  // 设置 box 的颜色
+                EcsTransform3 transform;
+                glm_mat4_identity(transform.value);
+                vec3 translation = { pos.x, pos.y, pos.z };
+                glm_translate(transform.value, translation);
 
-    for (int x = -grid_half_size; x < grid_half_size; x++) {
-        for (int y = -grid_half_size; y < grid_half_size; y++) {
-            EcsPosition3 pos = { x * spacing, y * spacing, 0.0f };
-            EcsBox box = { box_size, box_size, box_size };
-            EcsRgb color = { 1.f, 1.1f, 0.0f, 1.0f };  // 设置 box 的颜色
-            EcsTransform3 transform;
-            glm_mat4_identity(transform.value);
-            vec3 translation = { pos.x, pos.y, pos.z };
-            glm_translate(transform.value, translation);
-
-            world.entity()
-                .set<EcsPosition3>(pos)
-                .set<EcsBox>(box)
-                .set<EcsRgb>(color)
-                .set<EcsTransform3>(transform)
-                .add(HasMaterial, shiny_material);
+                world.entity()
+                    .set<EcsPosition3>(pos)
+                    .set<EcsBox>(box)
+                    .set<EcsRgb>(color)
+                    .set<EcsTransform3>(transform)
+                    .add(HasMaterial, shiny_material);
+            }
         }
     }
+
+
+    if(1)
+    {
+
+        EcsPosition3 pos = { 0, 0, 0 };
+        EcsText text = { 10, 10, 0.0, 0.0, 1.0, 1.0 };
+        EcsRgb color = { 1.0, 0.0, 0.0, 1.0 };
+        EcsTransform3 transform;
+        init_transform(transform, pos);
+
+        world.entity()
+            .set<EcsPosition3>(pos)
+            .set<EcsText>(text)
+            .set<EcsRgb>(color)
+            .set<EcsTransform3>(transform);
+
+
+
+    }
+ 
 
 }
 
