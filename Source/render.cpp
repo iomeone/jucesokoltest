@@ -1009,7 +1009,9 @@ sg_pipeline init_pipeline_text() {
         "  vec4 specular = vec4(specular_power * pow(r_dot_v, shininess) * dot_n_l * u_light_color, 1.0);\n"
         "  specular = clamp(specular, 0.0, 1.0);\n"
         "  frag_color = colorOfTex+  emissive + ambient + diffuse + specular;\n"
-        "  frag_color = colorOfTex;\n"
+        "  float gray = colorOfTex.r;\n"
+        "  vec4 grayColor = vec4(gray, gray, gray, 1.0);\n"
+        "  frag_color = grayColor;\n"
         "}\n";
 
     sg_shader shd = sg_make_shader(&shader_desc);
