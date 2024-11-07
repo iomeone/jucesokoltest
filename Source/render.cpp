@@ -1680,9 +1680,9 @@ void init_queries(flecs::world& world) {
     //    .build();
 }
 
-template<typename GeometryComponent>
-void attachGeometry(SokolBuffer& b, flecs::query<>& query, std::function<void(const GeometryComponent*, mat4&)> applyScaling) {
 
+template<typename BufferType, typename GeometryComponent>
+void attachGeometry(BufferType& b, flecs::query<>& query, std::function<void(const GeometryComponent*, mat4&, BufferType&, int32_t)> applyScaling) {
     if (!query.changed()) {
         return;
     }
@@ -1700,13 +1700,13 @@ void attachGeometry(SokolBuffer& b, flecs::query<>& query, std::function<void(co
     // Reallocate application-level buffers if needed
     if (b.instance_capacity < count) {
         b.instance_capacity = count * 2; // Increase capacity to avoid frequent reallocations
+
+        // Common buffers
         b.colors = (EcsRgb*)ecs_os_realloc(b.colors, b.instance_capacity * sizeof(EcsRgb));
         b.transforms = (mat4*)ecs_os_realloc(b.transforms, b.instance_capacity * sizeof(mat4));
         b.materials = (float*)ecs_os_realloc(b.materials, b.instance_capacity * sizeof(float));
 
-
-
-        // Recreate GPU buffers
+        // Recreate GPU buffers for common data
         {
             if (b.color_buffer.id != SG_INVALID_ID) {
                 sg_destroy_buffer(b.color_buffer);
@@ -1716,7 +1716,7 @@ void attachGeometry(SokolBuffer& b, flecs::query<>& query, std::function<void(co
             color_buf_desc.usage = SG_USAGE_DYNAMIC;
             b.color_buffer = sg_make_buffer(&color_buf_desc);
         }
-        
+
         {
             if (b.transform_buffer.id != SG_INVALID_ID) {
                 sg_destroy_buffer(b.transform_buffer);
@@ -1732,36 +1732,45 @@ void attachGeometry(SokolBuffer& b, flecs::query<>& query, std::function<void(co
                 sg_destroy_buffer(b.material_buffer);
             }
             sg_buffer_desc material_buf_desc = {};
-            material_buf_desc.size = b.instance_capacity * sizeof(uint32_t);
+            material_buf_desc.size = b.instance_capacity * sizeof(float);
             material_buf_desc.usage = SG_USAGE_DYNAMIC;
             b.material_buffer = sg_make_buffer(&material_buf_desc);
         }
 
+        // Specific to SokolBufferText
+        if constexpr (std::is_same_v<BufferType, SokolBufferText>) {
+            b.uv_texts = (vec2*)ecs_os_realloc(b.uv_texts, b.instance_capacity * sizeof(vec2));
+
+            // Recreate GPU buffer for uv_texts
+            if (b.uv_text_buffer.id != SG_INVALID_ID) {
+                sg_destroy_buffer(b.uv_text_buffer);
+            }
+            sg_buffer_desc uv_text_buf_desc = {};
+            uv_text_buf_desc.size = b.instance_capacity * sizeof(vec2);
+            uv_text_buf_desc.usage = SG_USAGE_DYNAMIC;
+            b.uv_text_buffer = sg_make_buffer(&uv_text_buf_desc);
+        }
     }
 
     size_t colors_size = count * sizeof(EcsRgb);
     size_t transforms_size = count * sizeof(mat4);
     size_t materials_size = count * sizeof(float);
-    size_t uv_size = count * sizeof(vec2);
+    size_t uv_texts_size = count * sizeof(vec2);
 
     int32_t cursor = 0;
 
     query.each([&](flecs::entity ent) {
-     
- 
-        const GeometryComponent* geometry = ent.get< GeometryComponent>();
-
-        const EcsRgb* color = ent.get< EcsRgb>();
-
+        const GeometryComponent* geometry = ent.get<GeometryComponent>();
+        const EcsRgb* color = ent.get<EcsRgb>();
         b.colors[cursor] = *color;
 
-        const EcsTransform3* transform = ent.get< EcsTransform3>();
+        const EcsTransform3* transform = ent.get<EcsTransform3>();
 
         // Copy the transform matrix
         glm_mat4_copy(const_cast<mat4&>(transform->value), b.transforms[cursor]);
 
-        // Apply scaling using the provided lambda function
-        applyScaling(geometry, b.transforms[cursor]);
+        // Apply scaling and additional per-instance data
+        applyScaling(geometry, b.transforms[cursor], b, cursor);
 
         // Get material
         auto HasMaterialentity = world.lookup("HasMaterial");
@@ -1784,14 +1793,18 @@ void attachGeometry(SokolBuffer& b, flecs::query<>& query, std::function<void(co
     sg_update_buffer(b.transform_buffer, { .ptr = b.transforms, .size = transforms_size });
     sg_update_buffer(b.material_buffer, { .ptr = b.materials, .size = materials_size });
 
-    
+    // Update uv_texts buffer if applicable
+    if constexpr (std::is_same_v<BufferType, SokolBufferText>) {
+        sg_update_buffer(b.uv_text_buffer, { .ptr = b.uv_texts, .size = uv_texts_size });
+    }
 }
+
 
 
 
 void SokolAttachRect(flecs::entity e, SokolBuffer& b) {
 
-    attachGeometry<EcsRectangle>(b, rectangle_query, [](const EcsRectangle* rect, mat4& transform) {
+    attachGeometry<SokolBuffer,EcsRectangle>(b, rectangle_query, [](const EcsRectangle* rect, mat4& transform, SokolBuffer& b, int32_t cursor) {
         vec3 scale = { rect->width, rect->height, 1.0f };
         glm_scale(transform, scale);
         });
@@ -1805,7 +1818,7 @@ void SokolAttachRect(flecs::entity e, SokolBuffer& b) {
 
 void SokolAttachBox(flecs::entity e, SokolBuffer& b) {
 
-    attachGeometry<EcsBox>(b, box_query, [](const EcsBox* box, mat4& transform) {
+    attachGeometry<SokolBuffer, EcsBox>(b, box_query, [](const EcsBox* box, mat4& transform, SokolBuffer& b, int32_t cursor) {
         vec3 scale = { box->width, box->height, box->depth };
         glm_scale(transform, scale);
         });
@@ -1816,9 +1829,14 @@ void SokolAttachBox(flecs::entity e, SokolBuffer& b) {
 //todo: need process image?
 void SokolAttachText(flecs::entity e, SokolBufferText& b) {
 
-    attachGeometry<EcsText>(b, text_query, [](const EcsText* text, mat4& transform) {
+    attachGeometry<SokolBufferText, EcsText>(b, text_query, [](const EcsText* text, mat4& transform, SokolBufferText& b, int32_t cursor) {
         vec3 scale = { text->width, text->height, 1.0f };
             glm_scale(transform, scale);
+
+            // 设置 uv_texts
+            b.uv_texts[cursor][0] = text->uv_x;
+            b.uv_texts[cursor][1] = text->uv_y;
+
         });
 
     return;
@@ -2094,8 +2112,8 @@ void _sg_initialize(int w, int h)
 
 
     auto SokolTextBuffer = world.entity("SokolTextBuffer")
-        .add<SokolBufferText>()
-        .add<TextTag>();
+        .add<SokolBufferText>();
+        //.add<TextTag>();
 
     
   
