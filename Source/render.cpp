@@ -973,7 +973,8 @@ sg_pipeline init_pipeline_text() {
         "   material = u_materials[material_id];\n"
         "   f_material = i_material;\n"
         "   uv = v_uv;\n"
-        "   uv_text = v_uv_text;\n"
+        "   uv_text =uv*(1.0/8.0) + v_uv_text;\n"
+        "   uv_text =uv + v_uv_text;\n"
         "}\n";
 
     // Fragment shader code
@@ -1008,7 +1009,7 @@ sg_pipeline init_pipeline_text() {
         "  vec4 specular = vec4(specular_power * pow(r_dot_v, shininess) * dot_n_l * u_light_color, 1.0);\n"
         "  specular = clamp(specular, 0.0, 1.0);\n"
         "  frag_color = colorOfTex+  emissive + ambient + diffuse + specular;\n"
-       
+        "  frag_color = colorOfTex;\n"
         "}\n";
 
     sg_shader shd = sg_make_shader(&shader_desc);
@@ -2480,8 +2481,8 @@ void _sg_initialize(int w, int h)
                               buffer.normal_buffer,
                               buffer.color_buffer,
                               buffer.material_buffer,
+                              buffer.uv_text_buffer,
                               buffer.transform_buffer,
-                              buffer.uv_text_buffer
                           },
                           .index_buffer = buffer.index_buffer,
 
@@ -2629,7 +2630,7 @@ void _sg_initialize(int w, int h)
 
         EcsPosition3 pos = { 0, 0, 0 };
         EcsText text = { 10, 10, 0.0, 0.0, 1.0, 1.0 };
-        EcsRgb color = { 1.0, 0.0, 0.0, 1.0 };
+        EcsRgb color = { .2, 0.2, .2, 1.0 };
         EcsTransform3 transform;
         init_transform(transform, pos);
 
@@ -2638,6 +2639,7 @@ void _sg_initialize(int w, int h)
             .set<EcsText>(text)
             .set<EcsRgb>(color)
             .set<EcsTransform3>(transform);
+            //.add(HasMaterial, shiny_material);
 
 
 
