@@ -4,8 +4,10 @@
               addUsingNamespaceToJuceHeader="0" jucerFormatVersion="1" cppLanguageStandard="20"
               headerPath="../../Source">
   <MAINGROUP id="AEHFTP" name="test">
+    <GROUP id="{599C3BB3-D07C-FCA9-D8A5-91687F4A816C}" name="res"/>
     <GROUP id="{2D65EF48-443F-241A-58A5-3EF2A590E23C}" name="dep">
       <GROUP id="{3BA18505-CC43-92E0-AD2C-C1993A05F789}" name="font">
+        <FILE id="JMMYzZ" name="font.cpp" compile="1" resource="0" file="Source/font.cpp"/>
         <FILE id="ApdRkv" name="fontstash.h" compile="0" resource="0" file="Source/fontstash.h"/>
         <FILE id="po12rV" name="stb_truetype.h" compile="0" resource="0" file="Source/stb_truetype.h"/>
       </GROUP>

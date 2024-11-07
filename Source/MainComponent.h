@@ -65,6 +65,8 @@ private:
     // Your private member variables go here...
     FPS _fps;
 
+    std::map<std::string, std::pair<size_t, std::vector<unsigned char>>> fontMap;
+
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (MainComponent)
 };

@@ -55,8 +55,42 @@ So my simple fix would be comment out the code repaintEvent.wait (-1);
 void MainComponent::initialise()
 {
     // Initialise GL objects for rendering here.
+
     openGLContext.setSwapInterval(0);
-    _sg_initialize(getWidth(), getHeight());
+
+
+
+   
+
+
+
+    // 获取当前执行文件所在目录
+    juce::File execDir = juce::File::getSpecialLocation(juce::File::currentExecutableFile).getParentDirectory();
+
+    // 获取同级目录下的 simsun.ttc 文件路径
+    juce::File simsunFontFile = execDir.getChildFile("simsun.ttc");
+
+    // 读取文件内容到 MemoryBlock
+    juce::MemoryBlock memoryBlock;
+    if (!simsunFontFile.loadFileAsData(memoryBlock))
+    {
+        juce::Logger::outputDebugString("Failed to load simsun.ttc");
+        return;
+    }
+
+    // 将 MemoryBlock 数据复制到 std::vector<char>
+    std::vector<unsigned char> memoryBuffer(memoryBlock.getSize());
+    std::memcpy(memoryBuffer.data(), memoryBlock.getData(), memoryBlock.getSize());
+
+    // 创建一个 map，将文件大小和内容存储进去
+
+    fontMap["simsun"] = { memoryBlock.getSize(), std::move(memoryBuffer) };
+
+
+    _sg_initialize(getWidth(), getHeight(), fontMap);
+
+
+     
 
 }
 
