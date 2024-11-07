@@ -18,7 +18,6 @@
         <FILE id="W2kEOC" name="cglm.h" compile="0" resource="0" file="Source/cglm.h"/>
       </GROUP>
       <GROUP id="{1FB375F8-8C57-F8FE-8A59-BDF0EA658545}" name="sokol">
-        <FILE id="DkmNga" name="sokol_glue.h" compile="0" resource="0" file="Source/sokol_glue.h"/>
         <FILE id="DGUx4U" name="sokol_gfx.h" compile="0" resource="0" file="Source/sokol_gfx.h"/>
         <FILE id="ineUWP" name="gfx.c" compile="1" resource="0" file="Source/gfx.c"/>
       </GROUP>
