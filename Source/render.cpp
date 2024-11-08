@@ -1049,6 +1049,9 @@ sg_pipeline init_pipeline_text() {
         "   material = u_materials[material_id];\n"
         "   f_material = i_material;\n"
         "   uv = v_uv;\n"
+
+        "   uv =  vec2(v_uv.x, 1.0 - v_uv.y);;\n"
+       
         "   uv_text =uv*(1.0/8.0) + v_uv_text;\n"
         "   uv_text =uv + v_uv_text;\n"
 
@@ -2631,7 +2634,7 @@ void _sg_initialize(int w, int h, const std::map<std::string, std::pair<size_t, 
 
    
         // Rectangle
-        EcsPosition3 pos1 = { -2.f, 2.f, 0.0f };
+        EcsPosition3 pos1 = { 2.f, 2.f, 0.0f };
         EcsRectangle rect1 = { 1.f, 1.f };
         EcsRgb color1 = { .5f, 0.0f, 0.0f, 1.0f };
         EcsTransform3 transform1;
