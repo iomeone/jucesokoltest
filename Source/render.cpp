@@ -1088,7 +1088,7 @@ sg_pipeline init_pipeline_text() {
         "  frag_color = colorOfTex+  emissive + ambient + diffuse + specular;\n"
         "  float gray = colorOfTex.r;\n"
         "  vec4 grayColor = vec4(gray, gray, gray, 1.0);\n"
-        "  frag_color = grayColor*0.0001 + uv.x+uv.y;\n"
+        "  frag_color = grayColor + uv.x * uv.y;\n"
         "}\n";
 
     sg_shader shd = sg_make_shader(&shader_desc);
@@ -1177,6 +1177,8 @@ sg_pipeline init_pipeline_text() {
     pipeline_desc.depth.compare = SG_COMPAREFUNC_LESS_EQUAL;
     pipeline_desc.depth.write_enabled = true;
     pipeline_desc.cull_mode = SG_CULLMODE_BACK;
+
+    pipeline_desc.face_winding = SG_FACEWINDING_CCW;
 
     return sg_make_pipeline(&pipeline_desc);
 
@@ -1268,8 +1270,8 @@ sg_pipeline init_pipeline() {
         "  vec4 diffuse = vec4(u_light_color, 1.0) * color * dot_n_l;\n"
         "  vec4 specular = vec4(specular_power * pow(r_dot_v, shininess) * dot_n_l * u_light_color, 1.0);\n"
         "  specular = clamp(specular, 0.0, 1.0);\n"
-        "  frag_color =  emissive + ambient + diffuse + specular;\n"
-        "  //frag_color = color * uv.x;\n"
+        "  frag_color =  (emissive + ambient + diffuse + specular)*0.0001 + uv.x * uv.y;\n"
+        "  frag_color =  (emissive + ambient + diffuse + specular);\n"
         "}\n";
 
     sg_shader shd = sg_make_shader(&shader_desc);
@@ -1341,7 +1343,7 @@ sg_pipeline init_pipeline() {
     pipeline_desc.depth.compare = SG_COMPAREFUNC_LESS_EQUAL;
     pipeline_desc.depth.write_enabled = true;
     pipeline_desc.cull_mode = SG_CULLMODE_BACK;
-
+    pipeline_desc.face_winding = SG_FACEWINDING_CCW;
     return sg_make_pipeline(&pipeline_desc);
 }
 
@@ -2258,7 +2260,7 @@ void _sg_initialize(int w, int h, const std::map<std::string, std::pair<size_t, 
 
         // 创建相机实体
         EcsCamera camera = {};
-        vec3 position = { 0.0f, 0.0f, -10.0f };
+        vec3 position = { 0.0f, 0.0f, 10.0f };
         vec3 lookat = { 0.0f, 0.0f, 0.0f };
         vec3 up = { 0.0f, 1.0f, 0.0f };
 
