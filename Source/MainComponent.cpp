@@ -67,14 +67,14 @@ void MainComponent::initialise()
     // 获取当前执行文件所在目录
     juce::File execDir = juce::File::getSpecialLocation(juce::File::currentExecutableFile).getParentDirectory();
 
-    // 获取同级目录下的 simsun.ttc 文件路径
-    juce::File simsunFontFile = execDir.getChildFile("simsun.ttc");
+    // 获取同级目录下的 simsun.ttc 文件路径 // DroidSans.ttf
+    juce::File simsunFontFile = execDir.getChildFile("DroidSans.ttf");
 
     // 读取文件内容到 MemoryBlock
     juce::MemoryBlock memoryBlock;
     if (!simsunFontFile.loadFileAsData(memoryBlock))
     {
-        juce::Logger::outputDebugString("Failed to load simsun.ttc");
+        juce::Logger::outputDebugString("Failed to load DroidSans.ttf");
         return;
     }
 
@@ -84,7 +84,7 @@ void MainComponent::initialise()
 
     // 创建一个 map，将文件大小和内容存储进去
 
-    fontMap["simsun"] = { memoryBlock.getSize(), std::move(memoryBuffer) };
+    fontMap["DroidSans"] = { memoryBlock.getSize(), std::move(memoryBuffer) };
 
 
     _sg_initialize(getWidth(), getHeight(), fontMap);

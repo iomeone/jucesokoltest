@@ -1,6 +1,12 @@
 
-#define FONTSTASH_IMPLEMENTATION
+//#define FONTSTASH_IMPLEMENTATION
+//
+//#include "stdlib.h"
+//#include "stdio.h"
+//#include "fontstash.h"
+
+#define STB_TRUETYPE_IMPLEMENTATION
 
 #include "stdlib.h"
 #include "stdio.h"
-#include "fontstash.h"
+#include "stb_truetype.h"

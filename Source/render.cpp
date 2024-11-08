@@ -14,8 +14,9 @@
 #include <chrono>
 
 
-#include <fontstash.h>
+//#include <fontstash.h>
 
+#include "stb_truetype.h"
 
 #ifdef JUCE_WINDOWS
 
@@ -213,10 +214,10 @@ struct EcsCamera
 
     EcsCamera()
     {
-        this->set_position(0, 0, 0);
-        this->set_lookat(0, 1, 1);
-        this->set_up(0, -1, 0);
-        this->set_fov(30);
+        this->set_position(0, 0, -10);
+        this->set_lookat(0, 0, 0);
+        this->set_up(0, 1, 0);
+        this->set_fov(90);
         this->near_ = 0.1f;
         this->far_ = 100;
         this->ortho = false;
@@ -534,321 +535,79 @@ struct SokolBufferText {
 
 
 
-
-
-
-
-
-
-
-struct GLFONScontext {
-    uint32_t tex;
-    int width, height;
-    uint32_t vertexBuffer;
-    uint32_t tcoordBuffer;
-    uint32_t colorBuffer;
-    uint32_t vertexArray; // Not used if GLFONTSTASH_IMPLEMENTATION_ES2 is defined
-};
-typedef struct GLFONScontext GLFONScontext;
-
-
-
-
-
-static int _renderCreate(void* userPtr, int width, int height)
-{
-    GLFONScontext* gl = (GLFONScontext*)userPtr;
-
-    //// Create may be called multiple times, delete existing texture.
-    //if (gl->tex != 0) {
-    //    glDeleteTextures(1, &gl->tex);
-    //    gl->tex = 0;
-    //}
-
-    //glGenTextures(1, &gl->tex);
-    //if (!gl->tex) return 0;
-
-    // Only use VAO if they are supported. This way the same implementation works on OpenGL ES2 too.
-//#ifndef GLFONTSTASH_IMPLEMENTATION_ES2
-//    if (!gl->vertexArray) glGenVertexArrays(1, &gl->vertexArray);
-//    if (!gl->vertexArray) return 0;
-//
-//    glBindVertexArray(gl->vertexArray);
-//#endif
-//
-//    if (!gl->vertexBuffer) glGenBuffers(1, &gl->vertexBuffer);
-//    if (!gl->vertexBuffer) return 0;
-//
-//    if (!gl->tcoordBuffer) glGenBuffers(1, &gl->tcoordBuffer);
-//    if (!gl->tcoordBuffer) return 0;
-//
-//    if (!gl->colorBuffer) glGenBuffers(1, &gl->colorBuffer);
-//    if (!gl->colorBuffer) return 0;
-
-    gl->width = width;
-    gl->height = height;
-    //glBindTexture(GL_TEXTURE_2D, gl->tex);
-
-//#ifdef GLFONTSTASH_IMPLEMENTATION_ES2
-//    glTexImage2D(GL_TEXTURE_2D, 0, GL_ALPHA, gl->width, gl->height, 0, GL_ALPHA, GL_UNSIGNED_BYTE, NULL);
-//    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-//    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-//#else
-//    glTexImage2D(GL_TEXTURE_2D, 0, GL_RED, gl->width, gl->height, 0, GL_RED, GL_UNSIGNED_BYTE, NULL);
-//    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-//    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-//    static GLint swizzleRgbaParams[4] = { GL_ONE, GL_ONE, GL_ONE, GL_RED };
-//    glTexParameteriv(GL_TEXTURE_2D, GL_TEXTURE_SWIZZLE_RGBA, swizzleRgbaParams);
-//#endif
-
-    return 1;
-}
-
-
-static int _renderResize(void* userPtr, int width, int height)
-{
-    // Reuse create to resize too.
-    return _renderCreate(userPtr, width, height);
-}
-
-
-
-
-
-static void _renderUpdate(void* userPtr, int* rect, const unsigned char* data)
-{
-    GLFONScontext* gl = (GLFONScontext*)userPtr;
-
-
-    // OpenGl desktop/es3 should use this version:
-    int w = rect[2] - rect[0];
-    int h = rect[3] - rect[1];
-
-    if (gl->tex == 0) return;
-
-    //// Push old values
-    //GLint alignment, rowLength, skipPixels, skipRows;
-    //glGetIntegerv(GL_UNPACK_ALIGNMENT, &alignment);
-    //glGetIntegerv(GL_UNPACK_ROW_LENGTH, &rowLength);
-    //glGetIntegerv(GL_UNPACK_SKIP_PIXELS, &skipPixels);
-    //glGetIntegerv(GL_UNPACK_SKIP_ROWS, &skipRows);
-
-    //glBindTexture(GL_TEXTURE_2D, gl->tex);
-
-    //glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
-    //glPixelStorei(GL_UNPACK_ROW_LENGTH, gl->width);
-    //glPixelStorei(GL_UNPACK_SKIP_PIXELS, rect[0]);
-    //glPixelStorei(GL_UNPACK_SKIP_ROWS, rect[1]);
-
-    //glTexSubImage2D(GL_TEXTURE_2D, 0, rect[0], rect[1], w, h, GL_RED, GL_UNSIGNED_BYTE, data);
-
-    //// Pop old values
-    //glPixelStorei(GL_UNPACK_ALIGNMENT, alignment);
-    //glPixelStorei(GL_UNPACK_ROW_LENGTH, rowLength);
-    //glPixelStorei(GL_UNPACK_SKIP_PIXELS, skipPixels);
-    //glPixelStorei(GL_UNPACK_SKIP_ROWS, skipRows);
-
-
-}
-
-
-
-
-
-static void _renderDraw(void* userPtr, const float* verts, const float* tcoords, const unsigned int* colors, int nverts)
-{
-    GLFONScontext* gl = (GLFONScontext*)userPtr;
-//#ifdef GLFONTSTASH_IMPLEMENTATION_ES2
-//    if (gl->tex == 0) return;
-//#else
-//    if (gl->tex == 0 || gl->vertexArray == 0) return;
-//
-//    glBindVertexArray(gl->vertexArray);
-//#endif
-
-//    glActiveTexture(GL_TEXTURE0);
-//    glBindTexture(GL_TEXTURE_2D, gl->tex);
-//
-//    glEnableVertexAttribArray(GLFONS_VERTEX_ATTRIB);
-//    glBindBuffer(GL_ARRAY_BUFFER, gl->vertexBuffer);
-//    glBufferData(GL_ARRAY_BUFFER, nverts * 2 * sizeof(float), verts, GL_DYNAMIC_DRAW);
-//    glVertexAttribPointer(GLFONS_VERTEX_ATTRIB, 2, GL_FLOAT, GL_FALSE, 0, NULL);
-//
-//    glEnableVertexAttribArray(GLFONS_TCOORD_ATTRIB);
-//    glBindBuffer(GL_ARRAY_BUFFER, gl->tcoordBuffer);
-//    glBufferData(GL_ARRAY_BUFFER, nverts * 2 * sizeof(float), tcoords, GL_DYNAMIC_DRAW);
-//    glVertexAttribPointer(GLFONS_TCOORD_ATTRIB, 2, GL_FLOAT, GL_FALSE, 0, NULL);
-//
-//    glEnableVertexAttribArray(GLFONS_COLOR_ATTRIB);
-//    glBindBuffer(GL_ARRAY_BUFFER, gl->colorBuffer);
-//    glBufferData(GL_ARRAY_BUFFER, nverts * sizeof(unsigned int), colors, GL_DYNAMIC_DRAW);
-//    glVertexAttribPointer(GLFONS_COLOR_ATTRIB, 4, GL_UNSIGNED_BYTE, GL_TRUE, 0, NULL);
-//
-//    glDrawArrays(GL_TRIANGLES, 0, nverts);
-//
-//    glDisableVertexAttribArray(GLFONS_VERTEX_ATTRIB);
-//    glDisableVertexAttribArray(GLFONS_TCOORD_ATTRIB);
-//    glDisableVertexAttribArray(GLFONS_COLOR_ATTRIB);
-//
-//#ifndef GLFONTSTASH_IMPLEMENTATION_ES2
-//    glBindVertexArray(0);
-//#endif
-}
-
-
-
-static void _renderDelete(void* userPtr)
-{
-    GLFONScontext* gl = (GLFONScontext*)userPtr;
-//    if (gl->tex != 0) {
-//        glDeleteTextures(1, &gl->tex);
-//        gl->tex = 0;
-//    }
-//
-//#ifndef GLFONTSTASH_IMPLEMENTATION_ES2
-//    glBindVertexArray(0);
-//#endif
-//
-//    if (gl->vertexBuffer != 0) {
-//        glDeleteBuffers(1, &gl->vertexBuffer);
-//        gl->vertexBuffer = 0;
-//    }
-//
-//    if (gl->tcoordBuffer != 0) {
-//        glDeleteBuffers(1, &gl->tcoordBuffer);
-//        gl->tcoordBuffer = 0;
-//    }
-//
-//    if (gl->colorBuffer != 0) {
-//        glDeleteBuffers(1, &gl->colorBuffer);
-//        gl->colorBuffer = 0;
-//    }
-//
-//#ifndef GLFONTSTASH_IMPLEMENTATION_ES2
-//    if (gl->vertexArray != 0) {
-//        glDeleteVertexArrays(1, &gl->vertexArray);
-//        gl->vertexArray = 0;
-//    }
-//#endif
-
-    free(gl);
-}
-
-
-
-FONS_DEF FONScontext* glfonsCreate(int width, int height, int flags)
-{
-    FONSparams params;
-    GLFONScontext* gl;
-
-    gl = (GLFONScontext*)malloc(sizeof(GLFONScontext));
-    if (gl == NULL) goto error;
-    memset(gl, 0, sizeof(GLFONScontext));
-
-    memset(&params, 0, sizeof(params));
-    params.width = width;
-    params.height = height;
-    params.flags = (unsigned char)flags;
-    params.renderCreate = _renderCreate;
-    params.renderResize = _renderResize;
-    params.renderUpdate = _renderUpdate;
-    params.renderDraw = _renderDraw;
-    params.renderDelete = _renderDelete;
-    params.userPtr = gl;
-
-    return fonsCreateInternal(&params);
-
-error:
-    if (gl != NULL) free(gl);
-    return NULL;
-}
-
-
-
- void glfonsDelete(FONScontext* ctx)
-{
-    fonsDeleteInternal(ctx);
-}
-
- unsigned int glfonsRGBA(unsigned char r, unsigned char g, unsigned char b, unsigned char a)
-{
-    return (r) | (g << 8) | (b << 16) | (a << 24);
-}
-
-
-
- void fontStashError(void* userPointer, int error, int value) {
-     FONScontext* stash = (FONScontext*)userPointer;
-     switch (error) {
-     case FONS_ATLAS_FULL:
-         printf( "Font atlas full.");
-         //fontStashEexpandAtlas(stash);
-         break;
-     case FONS_SCRATCH_FULL:
-         printf( "Font error: scratch full, tried to allocate %d", value);
-         break;
-     case FONS_STATES_OVERFLOW:
-         printf("Font error: states overflow.");
-         break;
-     case FONS_STATES_UNDERFLOW:
-         printf("Font error: states underflow.");
-         break;
-     default:
-         printf( "Font error: unknown.");
-         break;
-     }
- }
-
-
- FONScontext* fs = NULL;
-
-
-
-
- void initfont(const std::map<std::string, std::pair<size_t, std::vector<unsigned char>>>& fontMap)
+ void initfont(const std::map<std::string, std::pair<size_t, std::vector<unsigned char>>>& fontMap, sokol_render_state_t& state)
  {
-     
-     fs = glfonsCreate(512, 512, FONS_ZERO_TOPLEFT);
-     if (fs == NULL) {
-         printf("            fs is null");
-         return ;
-     }
-
-     fonsSetErrorCallback(fs, fontStashError, fs);
 
 
-     auto it = fontMap.find("simsun");
+     auto it = fontMap.find("DroidSans");
      if (it != fontMap.end())
      {
          const size_t fontSize = it->second.first;
          const std::vector<unsigned char>& fontMemory = it->second.second;
 
 
-         FONSsdfSettings effectsSdf = { 0 };
-         effectsSdf.sdfEnabled = 1;
-         effectsSdf.onedgeValue = 127;
-         effectsSdf.padding = 10;
-         effectsSdf.pixelDistScale = 8.0;
-
-         //int fonsAddFontSdfMem(FONScontext* stash, const char* name, unsigned char* data, int dataSize, int freeData, FONSsdfSettings sdfSettings)
+         stbtt_fontinfo font;
+         if (!stbtt_InitFont(&font, const_cast<unsigned char*>(fontMemory.data()), 0)) {
 
 
-         auto fontSdfEffects = fonsAddFontSdfMem(fs, "DroidSans", const_cast<unsigned char*>(fontMemory.data()), static_cast<int>(fontSize), 0, effectsSdf);
+             printf("\n             font init failed!\n");
+             return;
+         }
+         else
+         {
+             printf("\n             font init successfully!\n");
+         }
 
- 
+
+
+         int glyphIndex = stbtt_FindGlyphIndex(&font, 'a');
+
+
+
+         int padding = 5; // SDF 的填充
+         unsigned char onedge_value = 180;
+         float pixel_dist_scale = 180.0f / padding;
+         int width, height, xoff, yoff;
+
+         // 获取字形边界框
+         int x0, y0, x1, y1;
+         stbtt_GetGlyphBox(&font, glyphIndex, &x0, &y0, &x1, &y1);
+
+         int glyph_width = x1 - x0;
+         int glyph_height = y1 - y0;
+
+         int desired_glyph_size = 64 - 2 * padding;
+
+         // 计算缩放因子
+         float scale = (float)desired_glyph_size / (float)fmax(glyph_width, glyph_height);
+
+         unsigned char* sdf_bitmap = stbtt_GetGlyphSDF(&font, scale, glyphIndex, padding, onedge_value, pixel_dist_scale, &width, &height, &xoff, &yoff);
+
+         printf("Generated SDF bitmap: width=%d, height=%d\n", width, height);
+
+
+
+         if (sdf_bitmap)
+         {
+             // 将 sdf_bitmap 拷贝到 memoryBuffer 的左上角
+             for (int y = 0; y < height; y++) {
+                 memcpy(&state.memoryBuffer[y * 512], &sdf_bitmap[y * width], width);
+             }
+             stbtt_FreeSDF(sdf_bitmap, NULL);
+
+         }
+         else
+         {
+             printf("Failed to generate SDF bitmap.\n");
+
+         }
      }
 
 
-
  }
 
 
-
- void release_font()
- {
-
- }
-
+ 
 std::string build_fs_shader(const sokol_pass_desc_t& pass) {
     std::ostringstream fs_shader;
 
@@ -1275,14 +1034,14 @@ sg_pipeline init_pipeline_text() {
         "layout(location=6) in mat4 i_mat_m;\n"
         "out vec2 uv;\n"
         "out vec2 uv_text;\n"
-        "out vec4 position;\n"
+        "//out vec4 position;\n"
         "out vec3 normal;\n"
         "out vec4 color;\n"
         "out vec3 material;\n"
         "out float f_material;\n"
         "void main() {\n"
         "  gl_Position = u_mat_vp * i_mat_m * vec4(v_position, 1.0);\n"
-        "  position = i_mat_m * vec4(v_position, 1.0);\n"
+        " // position = i_mat_m * vec4(v_position, 1.0);\n"
         "  normal = mat3(i_mat_m) * v_normal;\n"
         "  color = i_color;\n"
 
@@ -1292,6 +1051,7 @@ sg_pipeline init_pipeline_text() {
         "   uv = v_uv;\n"
         "   uv_text =uv*(1.0/8.0) + v_uv_text;\n"
         "   uv_text =uv + v_uv_text;\n"
+
         "}\n";
 
     // Fragment shader code
@@ -1328,7 +1088,7 @@ sg_pipeline init_pipeline_text() {
         "  frag_color = colorOfTex+  emissive + ambient + diffuse + specular;\n"
         "  float gray = colorOfTex.r;\n"
         "  vec4 grayColor = vec4(gray, gray, gray, 1.0);\n"
-        "  frag_color = grayColor;\n"
+        "  frag_color = grayColor*0.0001 + uv.x+uv.y;\n"
         "}\n";
 
     sg_shader shd = sg_make_shader(&shader_desc);
@@ -1463,14 +1223,14 @@ sg_pipeline init_pipeline() {
         "layout(location=4) in float i_material;\n"
         "layout(location=5) in mat4 i_mat_m;\n"
         "out vec2 uv;\n"
-        "out vec4 position;\n"
+      
         "out vec3 normal;\n"
         "out vec4 color;\n"
         "out vec3 material;\n"
         "out float f_material;\n"
         "void main() {\n"
         "  gl_Position = u_mat_vp * i_mat_m * vec4(v_position, 1.0);\n"
-        "  position = i_mat_m * vec4(v_position, 1.0);\n"
+        "  //position = u_mat_vp * i_mat_m * vec4(v_position, 1.0);\n"
         "  normal = mat3(i_mat_m) * v_normal;\n"
         "  color = i_color;\n"
        
@@ -2408,7 +2168,7 @@ void _sg_initialize(int w, int h, const std::map<std::string, std::pair<size_t, 
     ecs_log_set_level(1);
 
 
-    initfont(fontMap);
+
 
 
     world.component<EcsPosition3>();
@@ -2474,7 +2234,8 @@ void _sg_initialize(int w, int h, const std::map<std::string, std::pair<size_t, 
     sokol_render_state_t state;
 
     {
-        init_memory_buffer(state);
+        initfont(fontMap, state);
+        //init_memory_buffer(state);
 
         state.sdfimage = sg_alloc_image();
 
@@ -2618,31 +2379,31 @@ void _sg_initialize(int w, int h, const std::map<std::string, std::pair<size_t, 
 
 
  
-        world.system<EcsCamera>()
-            .kind(flecs::OnUpdate)
-            .each([](flecs::entity e, EcsCamera& camera) {
-            // 每秒 60 度，换算成弧度每秒
-            const float rotation_speed = glm_rad(60.0f);
+        //world.system<EcsCamera>()
+        //    .kind(flecs::OnUpdate)
+        //    .each([](flecs::entity e, EcsCamera& camera) {
+        //    // 每秒 60 度，换算成弧度每秒
+        //    const float rotation_speed = glm_rad(60.0f);
 
-            // 获取时间增量 (delta time)
-            using clock = std::chrono::high_resolution_clock;
-            static auto last_time = clock::now();
-            auto now = clock::now();
-            float delta_time = std::chrono::duration<float>(now - last_time).count();
-            last_time = now;
+        //    // 获取时间增量 (delta time)
+        //    using clock = std::chrono::high_resolution_clock;
+        //    static auto last_time = clock::now();
+        //    auto now = clock::now();
+        //    float delta_time = std::chrono::duration<float>(now - last_time).count();
+        //    last_time = now;
 
-            // 累积旋转角度
-            static float accumulated_angle = 0.0f;
-            accumulated_angle += rotation_speed * delta_time;
+        //    // 累积旋转角度
+        //    static float accumulated_angle = 0.0f;
+        //    accumulated_angle += rotation_speed * delta_time;
 
-            // 设置旋转半径 (相机到旋转中心的距离)
-            float radius = glm_vec3_norm(camera.position);
+        //    // 设置旋转半径 (相机到旋转中心的距离)
+        //    float radius = glm_vec3_norm(camera.position);
 
-            // 根据累积角度计算新的相机位置
-            camera.position[0] = 50 * cos(accumulated_angle);
+        //    // 根据累积角度计算新的相机位置
+        //    camera.position[0] = 50 * cos(accumulated_angle);
 
 
-                });
+        //        });
  
 
   
@@ -2863,13 +2624,13 @@ void _sg_initialize(int w, int h, const std::map<std::string, std::pair<size_t, 
 
         };
 
-    if(0)
+    if(1)
     {
 
    
         // Rectangle
-        EcsPosition3 pos1 = { -0.5f, 0.f, 0.0f };
-        EcsRectangle rect1 = { 20.f, 20.f };
+        EcsPosition3 pos1 = { -2.f, 2.f, 0.0f };
+        EcsRectangle rect1 = { 1.f, 1.f };
         EcsRgb color1 = { .5f, 0.0f, 0.0f, 1.0f };
         EcsTransform3 transform1;
         init_transform(transform1, pos1);
@@ -2949,9 +2710,9 @@ void _sg_initialize(int w, int h, const std::map<std::string, std::pair<size_t, 
     if(1)
     {
 
-        EcsPosition3 pos = { 0, 0, 0 };
-        EcsText text = { 10, 10, 0.0, 0.0, 1.0, 1.0 };
-        EcsRgb color = { .2, 0.2, .2, 1.0 };
+        EcsPosition3 pos = { -2, -2, 0 };
+        EcsText text = { 2, 2, 0.0, 0.0, 1.0, 1.0 };
+        EcsRgb color = { .2, .2, .2, 1.0 };
         EcsTransform3 transform;
         init_transform(transform, pos);
 
