@@ -3437,7 +3437,7 @@ glm_vec3(vec4 v4, vec3 dest) {
  */
 CGLM_INLINE
 void
-glm_vec3_copy(vec3 a, vec3 dest) {
+glm_vec3_copy(const vec3 a, vec3 dest) {
   dest[0] = a[0];
   dest[1] = a[1];
   dest[2] = a[2];

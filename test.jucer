@@ -2,59 +2,30 @@
 
 <JUCERPROJECT id="nrviuM" name="test" projectType="guiapp" useAppConfig="0"
               addUsingNamespaceToJuceHeader="0" jucerFormatVersion="1" cppLanguageStandard="20"
-              headerPath=".\..\..\Source&#10;.\..\..\Source\components">
+              headerPath="../../Source">
   <MAINGROUP id="AEHFTP" name="test">
-    <GROUP id="{2D65EF48-443F-241A-58A5-3EF2A590E23C}" name="components">
-      <FILE id="SA6VKj" name="flecs_components_cglm.c" compile="1" resource="0"
-            file="Source/components/flecs_components_cglm.c"/>
-      <FILE id="p4miYt" name="flecs_components_cglm.h" compile="0" resource="0"
-            file="Source/components/flecs_components_cglm.h"/>
-      <FILE id="icKH75" name="flecs_components_geometry.c" compile="1" resource="0"
-            file="Source/components/flecs_components_geometry.c"/>
-      <FILE id="LDutJZ" name="flecs_components_geometry.h" compile="0" resource="0"
-            file="Source/components/flecs_components_geometry.h"/>
-      <FILE id="sPTLfp" name="flecs_components_graphics.c" compile="1" resource="0"
-            file="Source/components/flecs_components_graphics.c"/>
-      <FILE id="SmLGwJ" name="flecs_components_graphics.h" compile="0" resource="0"
-            file="Source/components/flecs_components_graphics.h"/>
-      <FILE id="Fh4enP" name="flecs_components_gui.c" compile="1" resource="0"
-            file="Source/components/flecs_components_gui.c"/>
-      <FILE id="R6rRiE" name="flecs_components_gui.h" compile="0" resource="0"
-            file="Source/components/flecs_components_gui.h"/>
-      <FILE id="lyAHPN" name="flecs_components_input.c" compile="1" resource="0"
-            file="Source/components/flecs_components_input.c"/>
-      <FILE id="V9AzOh" name="flecs_components_input.h" compile="0" resource="0"
-            file="Source/components/flecs_components_input.h"/>
-      <FILE id="mAt5cY" name="flecs_components_physics.c" compile="1" resource="0"
-            file="Source/components/flecs_components_physics.c"/>
-      <FILE id="NmyzUM" name="flecs_components_physics.h" compile="0" resource="0"
-            file="Source/components/flecs_components_physics.h"/>
-      <FILE id="bXQYkw" name="flecs_components_transform.c" compile="1" resource="0"
-            file="Source/components/flecs_components_transform.c"/>
-      <FILE id="U9FI9m" name="flecs_components_transform.h" compile="0" resource="0"
-            file="Source/components/flecs_components_transform.h"/>
-      <FILE id="bcagbN" name="flecs_game.c" compile="1" resource="0" file="Source/components/flecs_game.c"/>
-      <FILE id="Em03vs" name="flecs_game.h" compile="0" resource="0" file="Source/components/flecs_game.h"/>
-      <FILE id="FCEVzs" name="flecs_systems_physics.c" compile="1" resource="0"
-            file="Source/components/flecs_systems_physics.c"/>
-      <FILE id="PvUWkt" name="flecs_systems_physics.h" compile="0" resource="0"
-            file="Source/components/flecs_systems_physics.h"/>
-      <FILE id="tRY1SV" name="flecs_systems_transform.c" compile="1" resource="0"
-            file="Source/components/flecs_systems_transform.c"/>
-      <FILE id="ZisHt5" name="flecs_systems_transform.h" compile="0" resource="0"
-            file="Source/components/flecs_systems_transform.h"/>
+    <GROUP id="{599C3BB3-D07C-FCA9-D8A5-91687F4A816C}" name="res"/>
+    <GROUP id="{2D65EF48-443F-241A-58A5-3EF2A590E23C}" name="dep">
+      <GROUP id="{3BA18505-CC43-92E0-AD2C-C1993A05F789}" name="font">
+        <FILE id="JMMYzZ" name="font.cpp" compile="1" resource="0" file="Source/font.cpp"/>
+        <FILE id="ApdRkv" name="fontstash.h" compile="0" resource="0" file="Source/fontstash.h"/>
+        <FILE id="po12rV" name="stb_truetype.h" compile="0" resource="0" file="Source/stb_truetype.h"/>
+      </GROUP>
+      <GROUP id="{C4201A84-49A8-8EE3-8EB5-EBC34741461B}" name="ecs">
+        <FILE id="ksMi7G" name="flecs.c" compile="1" resource="0" file="Source/flecs.c"/>
+        <FILE id="s2A1Ka" name="flecs.h" compile="0" resource="0" file="Source/flecs.h"/>
+      </GROUP>
+      <GROUP id="{B88CAD28-8D7A-A622-AF5A-73AF7F13684E}" name="glm">
+        <FILE id="m43UOz" name="cglm.c" compile="1" resource="0" file="Source/cglm.c"/>
+        <FILE id="W2kEOC" name="cglm.h" compile="0" resource="0" file="Source/cglm.h"/>
+      </GROUP>
+      <GROUP id="{1FB375F8-8C57-F8FE-8A59-BDF0EA658545}" name="sokol">
+        <FILE id="DGUx4U" name="sokol_gfx.h" compile="0" resource="0" file="Source/sokol_gfx.h"/>
+        <FILE id="ineUWP" name="gfx.c" compile="1" resource="0" file="Source/gfx.c"/>
+      </GROUP>
     </GROUP>
     <GROUP id="{F4BFA2C5-5F83-85B8-074D-0394FF02F5C5}" name="Source">
-      <FILE id="DMSk8C" name="flecs_systems_sokol.h" compile="0" resource="0"
-            file="Source/flecs_systems_sokol.h"/>
-      <FILE id="viZri3" name="flecs_systems_sokol.c" compile="1" resource="0"
-            file="Source/flecs_systems_sokol.c"/>
-      <FILE id="N3LRKh" name="sokol_gfx.h" compile="0" resource="0" file="Source/sokol_gfx.h"/>
-      <FILE id="FBNpij" name="cglm.c" compile="1" resource="0" file="Source/cglm.c"/>
-      <FILE id="L5cXkb" name="cglm.h" compile="0" resource="0" file="Source/cglm.h"/>
-      <FILE id="ksMi7G" name="flecs.c" compile="1" resource="0" file="Source/flecs.c"/>
-      <FILE id="s2A1Ka" name="flecs.h" compile="0" resource="0" file="Source/flecs.h"/>
-      <FILE id="FNArEN" name="render.c" compile="1" resource="0" file="Source/render.c"/>
+      <FILE id="FNArEN" name="render.cpp" compile="1" resource="0" file="Source/render.cpp"/>
       <FILE id="uDUJYl" name="render.h" compile="0" resource="0" file="Source/render.h"/>
       <FILE id="KbdC83" name="Main.cpp" compile="1" resource="0" file="Source/Main.cpp"/>
       <FILE id="LwVfLH" name="MainComponent.h" compile="0" resource="0" file="Source/MainComponent.h"/>
