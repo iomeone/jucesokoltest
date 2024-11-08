@@ -14,9 +14,11 @@
 #include <chrono>
 
 
-//#include <fontstash.h>
+#include "stb_rect_pack.h"
 
 #include "stb_truetype.h"
+
+
 
 #ifdef JUCE_WINDOWS
 
@@ -323,6 +325,13 @@ typedef struct {
 
 
 
+ struct SDFChar {
+     int codepoint;
+     float x0, y0, x1, y1; // 在图集中的归一化 UV 坐标
+     int width, height;    // 字符位图的宽高
+     int xoff, yoff;       // 字形的偏移
+     float xadvance;       // 下一个字符的进位
+ };
 
 
 
@@ -346,6 +355,8 @@ typedef struct {
      int32_t width;
      int32_t height;
 
+
+     SDFChar sdf_chars[1024];
      //sokol_resources_t* resources;
      //sokol_global_uniforms_t uniforms;
      uint8_t memoryBuffer[512 * 512] = { 0 };
@@ -578,29 +589,165 @@ struct SokolBufferText {
 
          int desired_glyph_size = 64 - 2 * padding;
 
-         // 计算缩放因子
-         float scale = (float)desired_glyph_size / (float)fmax(glyph_width, glyph_height);
-
-         unsigned char* sdf_bitmap = stbtt_GetGlyphSDF(&font, scale, glyphIndex, padding, onedge_value, pixel_dist_scale, &width, &height, &xoff, &yoff);
-
-         printf("Generated SDF bitmap: width=%d, height=%d\n", width, height);
 
 
 
-         if (sdf_bitmap)
+
+         // 定义要生成的字符范围，这里是 ASCII 可见字符（32 到 127）
+         const int first_char = 32;
+         const int num_chars = 96; // 127 - 32 + 1
+
+         // 用于存储每个字符的 SDF 位图和矩形信息
+         std::vector<unsigned char*> sdf_bitmaps(num_chars, nullptr);
+         std::vector<stbrp_rect> rects(num_chars);
+
+         float scale;
+
+         // 为每个字符生成 SDF 位图并准备打包
+         for (int i = 0; i < num_chars; ++i)
          {
-             // 将 sdf_bitmap 拷贝到 memoryBuffer 的左上角
-             for (int y = 0; y < height; y++) {
-                 memcpy(&state.memoryBuffer[y * 512], &sdf_bitmap[y * width], width);
+             int codepoint = first_char + i;
+             int glyph_index = stbtt_FindGlyphIndex(&font, codepoint);
+
+             // 获取字符的度量信息
+             int advanceWidth, leftSideBearing;
+             stbtt_GetGlyphHMetrics(&font, glyph_index, &advanceWidth, &leftSideBearing);
+
+             // 获取字形边界框
+             int x0, y0, x1, y1;
+             stbtt_GetGlyphBox(&font, glyph_index, &x0, &y0, &x1, &y1);
+
+             int glyph_width = x1 - x0;
+             int glyph_height = y1 - y0;
+
+             // 计算缩放因子
+             scale = (float)desired_glyph_size / (float)std::max(glyph_width, glyph_height);
+
+             int width, height, xoff, yoff;
+
+             // 生成字符的 SDF 位图
+             unsigned char* sdf_bitmap = stbtt_GetGlyphSDF(&font, scale, glyph_index, padding, onedge_value, pixel_dist_scale, &width, &height, &xoff, &yoff);
+
+             if (sdf_bitmap)
+             {
+                 sdf_bitmaps[i] = sdf_bitmap;
+
+                 // 准备矩形用于打包
+                 rects[i].id = i;
+                 rects[i].w = width;
+                 rects[i].h = height;
+
+                 // 存储每个字符的信息，以便在渲染时使用
+                 SDFChar& sdf_char = state.sdf_chars[i];
+                 sdf_char.codepoint = codepoint;
+                 sdf_char.width = width;
+                 sdf_char.height = height;
+                 sdf_char.xoff = xoff;
+                 sdf_char.yoff = yoff;
+                 sdf_char.xadvance = advanceWidth * scale;
+                 // x0, y0, x1, y1 将在打包后设置
              }
-             stbtt_FreeSDF(sdf_bitmap, NULL);
+             else
+             {
+                 printf("Failed to generate SDF bitmap for codepoint %d.\n", codepoint);
+                 sdf_bitmaps[i] = nullptr;
 
+                 // 设置矩形大小为零，跳过打包
+                 rects[i].w = 0;
+                 rects[i].h = 0;
+             }
          }
-         else
+
+
+
+
+
+
+         // 使用 stb_rect_pack.h 进行矩形打包
+         stbrp_context context;
+         const int atlas_width = 512;
+         const int atlas_height = 512;
+
+         // 创建用于打包的节点数组
+         std::vector<stbrp_node> nodes(atlas_width);
+
+         stbrp_init_target(&context, atlas_width, atlas_height, nodes.data(), atlas_width);
+
+         // 执行打包
+         stbrp_pack_rects(&context, rects.data(), rects.size());
+
+
+
+
+
+
+
+
+         // 将 SDF 位图复制到 memoryBuffer 中对应的位置
+         memset(state.memoryBuffer, 0, sizeof(state.memoryBuffer));
+
+         for (int i = 0; i < num_chars; ++i)
          {
-             printf("Failed to generate SDF bitmap.\n");
+             if (sdf_bitmaps[i] && rects[i].was_packed)
+             {
+                 int x = rects[i].x;
+                 int y = rects[i].y;
+                 int width = rects[i].w;
+                 int height = rects[i].h;
+                 unsigned char* sdf_bitmap = sdf_bitmaps[i];
 
+                 for (int row = 0; row < height; ++row)
+                 {
+                     memcpy(&state.memoryBuffer[(y + row) * 512 + x], &sdf_bitmap[row * width], width);
+                 }
+
+                 stbtt_FreeSDF(sdf_bitmap, NULL);
+
+                 // 更新每个字符的 UV 坐标（归一化）
+                 SDFChar& sdf_char = state.sdf_chars[i];
+                 sdf_char.x0 = (float)x / atlas_width;
+                 sdf_char.y0 = (float)y / atlas_height;
+                 sdf_char.x1 = (float)(x + width) / atlas_width;
+                 sdf_char.y1 = (float)(y + height) / atlas_height;
+             }
+             else
+             {
+                 if (sdf_bitmaps[i])
+                 {
+                     stbtt_FreeSDF(sdf_bitmaps[i], NULL);
+                 }
+
+                 // 如果字符未打包，设置 UV 坐标为零
+                 SDFChar& sdf_char = state.sdf_chars[i];
+                 sdf_char.x0 = sdf_char.y0 = sdf_char.x1 = sdf_char.y1 = 0.0f;
+             }
          }
+
+
+
+         //// 计算缩放因子
+         //float scale = (float)desired_glyph_size / (float)fmax(glyph_width, glyph_height);
+
+         //unsigned char* sdf_bitmap = stbtt_GetGlyphSDF(&font, scale, glyphIndex, padding, onedge_value, pixel_dist_scale, &width, &height, &xoff, &yoff);
+
+         //printf("Generated SDF bitmap: width=%d, height=%d\n", width, height);
+
+
+
+         //if (sdf_bitmap)
+         //{
+         //    // 将 sdf_bitmap 拷贝到 memoryBuffer 的左上角
+         //    for (int y = 0; y < height; y++) {
+         //        memcpy(&state.memoryBuffer[y * 512], &sdf_bitmap[y * width], width);
+         //    }
+         //    stbtt_FreeSDF(sdf_bitmap, NULL);
+
+         //}
+         //else
+         //{
+         //    printf("Failed to generate SDF bitmap.\n");
+
+         //}
      }
 
 
@@ -2263,7 +2410,7 @@ void _sg_initialize(int w, int h, const std::map<std::string, std::pair<size_t, 
 
         // 创建相机实体
         EcsCamera camera = {};
-        vec3 position = { 0.0f, 0.0f, 10.0f };
+        vec3 position = { 0.0f, 0.0f, 20.0f };
         vec3 lookat = { 0.0f, 0.0f, 0.0f };
         vec3 up = { 0.0f, 1.0f, 0.0f };
 
@@ -2384,31 +2531,31 @@ void _sg_initialize(int w, int h, const std::map<std::string, std::pair<size_t, 
 
 
  
-        //world.system<EcsCamera>()
-        //    .kind(flecs::OnUpdate)
-        //    .each([](flecs::entity e, EcsCamera& camera) {
-        //    // 每秒 60 度，换算成弧度每秒
-        //    const float rotation_speed = glm_rad(60.0f);
+        world.system<EcsCamera>()
+            .kind(flecs::OnUpdate)
+            .each([](flecs::entity e, EcsCamera& camera) {
+            // 每秒 60 度，换算成弧度每秒
+            const float rotation_speed = glm_rad(60.0f);
 
-        //    // 获取时间增量 (delta time)
-        //    using clock = std::chrono::high_resolution_clock;
-        //    static auto last_time = clock::now();
-        //    auto now = clock::now();
-        //    float delta_time = std::chrono::duration<float>(now - last_time).count();
-        //    last_time = now;
+            // 获取时间增量 (delta time)
+            using clock = std::chrono::high_resolution_clock;
+            static auto last_time = clock::now();
+            auto now = clock::now();
+            float delta_time = std::chrono::duration<float>(now - last_time).count();
+            last_time = now;
 
-        //    // 累积旋转角度
-        //    static float accumulated_angle = 0.0f;
-        //    accumulated_angle += rotation_speed * delta_time;
+            // 累积旋转角度
+            static float accumulated_angle = 0.0f;
+            accumulated_angle += rotation_speed * delta_time;
 
-        //    // 设置旋转半径 (相机到旋转中心的距离)
-        //    float radius = glm_vec3_norm(camera.position);
+            // 设置旋转半径 (相机到旋转中心的距离)
+            float radius = glm_vec3_norm(camera.position);
 
-        //    // 根据累积角度计算新的相机位置
-        //    camera.position[0] = 50 * cos(accumulated_angle);
+            // 根据累积角度计算新的相机位置
+            camera.position[0] = 50 * cos(accumulated_angle);
 
 
-        //        });
+                });
  
 
   
@@ -2715,8 +2862,8 @@ void _sg_initialize(int w, int h, const std::map<std::string, std::pair<size_t, 
     if(1)
     {
 
-        EcsPosition3 pos = { -2, -2, 0 };
-        EcsText text = { 2, 2, 0.0, 0.0, 1.0, 1.0 };
+        EcsPosition3 pos = { -2, -2, -5 };
+        EcsText text = { 20, 20, 0.0, 0.0, 1.0, 1.0 };
         EcsRgb color = { .2, .2, .2, 1.0 };
         EcsTransform3 transform;
         init_transform(transform, pos);

@@ -9,6 +9,7 @@
       <GROUP id="{3BA18505-CC43-92E0-AD2C-C1993A05F789}" name="font">
         <FILE id="JMMYzZ" name="font.cpp" compile="1" resource="0" file="Source/font.cpp"/>
         <FILE id="ApdRkv" name="fontstash.h" compile="0" resource="0" file="Source/fontstash.h"/>
+        <FILE id="nk1TdH" name="stb_rect_pack.h" compile="0" resource="0" file="Source/stb_rect_pack.h"/>
         <FILE id="po12rV" name="stb_truetype.h" compile="0" resource="0" file="Source/stb_truetype.h"/>
       </GROUP>
       <GROUP id="{C4201A84-49A8-8EE3-8EB5-EBC34741461B}" name="ecs">
