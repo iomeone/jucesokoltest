@@ -27,6 +27,7 @@ Download the following version of JUCE:
     ```
 
 4. **Open Project Configuration**:
+   - The `Projucer` executable is located inside the `JUCE` directory.
    - In the `jucesokoltest` folder, open `test.jucer` with JUCE's Projucer.
    - Navigate to `exporters` in the lower-left corner of the Projucer window.
    - Select your platform’s exporter (e.g., Xcode for macOS/iOS, VS2022/VS2019 for Windows, Makefile for Linux, or Android).
@@ -71,6 +72,7 @@ Download the following version of JUCE:
     ```
 
 4. **打开项目配置**:
+   - `Projucer` 执行文件位于 `JUCE` 目录内。
    - 在 `jucesokoltest` 文件夹中，用 Projucer 打开 `test.jucer` 文件。
    - 在 Projucer 窗口左下角导航到 `exporters`。
    - 选择您平台的导出选项（例如，macOS/iOS 的 Xcode，Windows 的 VS2022/VS2019，Linux 的 Makefile，或 Android）。
