@@ -594,8 +594,8 @@ struct SokolBufferText {
 
 
          // 定义要生成的字符范围，这里是 ASCII 可见字符（32 到 127）
-         const int first_char = 32;
-         const int num_chars = 96; // 127 - 32 + 1
+         const int first_char = 65;
+         const int num_chars = 64; // 127 - 32 + 1
 
          // 用于存储每个字符的 SDF 位图和矩形信息
          std::vector<unsigned char*> sdf_bitmaps(num_chars, nullptr);
@@ -607,6 +607,10 @@ struct SokolBufferText {
          for (int i = 0; i < num_chars; ++i)
          {
              int codepoint = first_char + i;
+             if (codepoint == 0x69)
+             {
+                 printf("debug");
+             }
              int glyph_index = stbtt_FindGlyphIndex(&font, codepoint);
 
              // 获取字符的度量信息
@@ -2983,7 +2987,7 @@ void _sg_initialize(int w, int h, const std::map<std::string, std::pair<size_t, 
 
     if(0)
     {
-        const int first_char = 32;
+        const int first_char = 65;
 
 
         int codepoint = 'A';
@@ -3015,27 +3019,39 @@ void _sg_initialize(int w, int h, const std::map<std::string, std::pair<size_t, 
 
     }
 
- 
-    if (1) {
-        const int first_char = 32;
-        int codepoint = 'A';
-        int index = codepoint - first_char; // 计算字符在数组中的索引
-        SDFChar& sdf_char = state.sdf_chars[index];
 
-        EcsText text = {
-            2, 2,                      // 宽度和高度
-            sdf_char.x0, sdf_char.y0,    // UV 起始坐标
-            sdf_char.x1 - sdf_char.x0,   // UV 宽度
-            sdf_char.y1 - sdf_char.y0    // UV 高度
-        };
+
+
+
+
+    if (1) {
+        const int first_char = 65;
+
+        std::string text_content = "ABCDEFG abcdefg ";
+
 
         EcsRgb color = { 1.0f, 0.0f, 1.0f, 1.0f }; // 字符颜色
 
-        // 循环生成 1600 个字符实例
-        for (int x = -20; x <= 20; x += 2) {
-            for (int y = -20; y <= 20; y += 2) {
+        int text_length = text_content.length();
+        int char_index = 0; // 用于跟踪当前字符的位置
+
+        // 循环生成字符实例
+        for (int y = 20; y >= -20; y -= 2) {
+            for (int x = -20; x <= 20; x += 2){
+                int codepoint =  text_content[char_index]; // 获取当前字符的ASCII码
+                int index = codepoint - first_char; // 计算字符在数组中的索引
+                SDFChar& sdf_char = state.sdf_chars[index];
+
+                // 设置字符的 UV 和大小
+                EcsText text = {
+                    2, 2,                      // 宽度和高度
+                    sdf_char.x0, sdf_char.y0,  // UV 起始坐标
+                    sdf_char.x1 - sdf_char.x0, // UV 宽度
+                    sdf_char.y1 - sdf_char.y0  // UV 高度
+                };
+
                 // 设置字符的位置
-                EcsPosition3 pos = { static_cast<float>(x),  static_cast<float>(y), 0.f };
+                EcsPosition3 pos = { static_cast<float>(x), static_cast<float>(y), 0.f };
 
                 // 初始化变换矩阵
                 EcsTransform3 transform;
@@ -3047,9 +3063,13 @@ void _sg_initialize(int w, int h, const std::map<std::string, std::pair<size_t, 
                     .set<EcsText>(text)
                     .set<EcsRgb>(color)
                     .set<EcsTransform3>(transform);
+
+                // 更新字符索引，循环从头开始
+                char_index = (char_index + 1) % text_length;
             }
         }
     }
+
 }
 
 
