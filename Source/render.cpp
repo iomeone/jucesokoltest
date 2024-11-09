@@ -495,7 +495,7 @@ struct SokolBufferText {
     int32_t index_count;
 
 
-    vec2* uv_texts;
+    vec4* uv_texts;
     sg_buffer uv_text_buffer;
 
 
@@ -1177,10 +1177,10 @@ sg_pipeline init_pipeline_text() {
         "layout(location=2) in vec3 v_normal;\n"
         "layout(location=3) in vec4 i_color;\n"
         "layout(location=4) in float i_material;\n"
-        "layout(location=5) in vec2 v_uv_text;\n"
+        "layout(location=5) in vec4 v_uv_text;\n"
         "layout(location=6) in mat4 i_mat_m;\n"
         "out vec2 uv;\n"
-        "out vec2 uv_text;\n"
+        "out vec4 uv_text;\n"
         "//out vec4 position;\n"
         "out vec3 normal;\n"
         "out vec4 color;\n"
@@ -1199,8 +1199,8 @@ sg_pipeline init_pipeline_text() {
 
         "   uv =  vec2(v_uv.x, 1.0 - v_uv.y);;\n"
        
-        "   uv_text =uv*(1.0/8.0) + v_uv_text;\n"
-        "   uv_text =uv + v_uv_text;\n"
+        "   //uv_text =uv*(1.0/8.0) + v_uv_text;\n"
+        "   uv_text =v_uv_text;\n"
 
         "}\n";
 
@@ -1218,7 +1218,7 @@ sg_pipeline init_pipeline_text() {
         "in vec3 material;\n"
         "in float f_material;\n"
         "in vec2 uv;\n"
-        "in vec2 uv_text;\n"
+        "in vec4 uv_text;\n"
         "out vec4 frag_color;\n"
         "void main() {\n"
         "  float specular_power = material.x;\n"
@@ -1230,7 +1230,11 @@ sg_pipeline init_pipeline_text() {
         "  vec3 v = normalize(u_eye_pos - position.xyz);\n"
         "  vec3 r = reflect(-l, n);\n"
         "  float r_dot_v = max(dot(r, v), 0.0);\n"
-        "  vec4 colorOfTex = texture(tex, uv_text);\n"
+
+
+        "  vec2 uv_actual = uv * uv_text.zw + uv_text.xy;\n" // 计算实际的 UV 坐标
+
+        "  vec4 colorOfTex = texture(tex, uv_actual);\n"
         "  vec4 ambient = vec4(u_light_ambient, 1.0) * (color+colorOfTex);\n"
         "  vec4 diffuse = vec4(u_light_color, 1.0) *  (color+colorOfTex) * dot_n_l;\n"
         "  vec4 specular = vec4(specular_power * pow(r_dot_v, shininess) * dot_n_l * u_light_color, 1.0);\n"
@@ -1299,7 +1303,7 @@ sg_pipeline init_pipeline_text() {
 
     pipeline_desc.layout.attrs[5].buffer_index = 4; // uv_text
     pipeline_desc.layout.attrs[5].offset = 0;
-    pipeline_desc.layout.attrs[5].format = SG_VERTEXFORMAT_FLOAT2;
+    pipeline_desc.layout.attrs[5].format = SG_VERTEXFORMAT_FLOAT4;
 
     // Transform matrix attributes
     pipeline_desc.layout.attrs[6].buffer_index = 5;
@@ -1988,14 +1992,14 @@ void attachGeometry(BufferType& b, flecs::query<>& query, std::function<void(con
 
         // Specific to SokolBufferText
         if constexpr (std::is_same_v<BufferType, SokolBufferText>) {
-            b.uv_texts = (vec2*)ecs_os_realloc(b.uv_texts, b.instance_capacity * sizeof(vec2));
+            b.uv_texts = (vec4*)ecs_os_realloc(b.uv_texts, b.instance_capacity * sizeof(vec4));
 
             // Recreate GPU buffer for uv_texts
             if (b.uv_text_buffer.id != SG_INVALID_ID) {
                 sg_destroy_buffer(b.uv_text_buffer);
             }
             sg_buffer_desc uv_text_buf_desc = {};
-            uv_text_buf_desc.size = b.instance_capacity * sizeof(vec2);
+            uv_text_buf_desc.size = b.instance_capacity * sizeof(vec4);
             uv_text_buf_desc.usage = SG_USAGE_DYNAMIC;
             b.uv_text_buffer = sg_make_buffer(&uv_text_buf_desc);
         }
@@ -2004,7 +2008,7 @@ void attachGeometry(BufferType& b, flecs::query<>& query, std::function<void(con
     size_t colors_size = count * sizeof(EcsRgb);
     size_t transforms_size = count * sizeof(mat4);
     size_t materials_size = count * sizeof(float);
-    size_t uv_texts_size = count * sizeof(vec2);
+    size_t uv_texts_size = count * sizeof(vec4);
 
     int32_t cursor = 0;
 
@@ -2031,6 +2035,19 @@ void attachGeometry(BufferType& b, flecs::query<>& query, std::function<void(con
                 b.materials[cursor] = material_id;
             }
         }
+
+
+        // Special handling for SokolBufferText
+        if constexpr (std::is_same_v<BufferType, SokolBufferText>) {
+            const EcsText* text = ent.get<EcsText>();
+            if (text) {
+                b.uv_texts[cursor][0] = text->uv_x;        // u0
+                b.uv_texts[cursor][1] = text->uv_y;        // v0
+                b.uv_texts[cursor][2] = text->uv_w;        // u1
+                b.uv_texts[cursor][3] = text->uv_h;        // v1
+            }
+        }
+
 
         cursor++;
         });
@@ -2861,9 +2878,23 @@ void _sg_initialize(int w, int h, const std::map<std::string, std::pair<size_t, 
 
     if(1)
     {
+        const int first_char = 32;
+
+
+        int codepoint = 'A';
+        int index = codepoint - first_char; // 计算字符在数组中的索引
+        SDFChar& sdf_char = state.sdf_chars[index];
+
+        EcsText text = {
+            10, 10,                      // 宽度和高度
+            sdf_char.x0, sdf_char.y0,  // UV 起始坐标
+            sdf_char.x1 - sdf_char.x0, // UV 宽度
+            sdf_char.y1 - sdf_char.y0  // UV 高度
+        };
+
 
         EcsPosition3 pos = { -2, -2, -5 };
-        EcsText text = { 20, 20, 0.0, 0.0, 1.0, 1.0 };
+
         EcsRgb color = { .2, .2, .2, 1.0 };
         EcsTransform3 transform;
         init_transform(transform, pos);
