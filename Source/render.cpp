@@ -216,7 +216,7 @@ struct EcsCamera
 
     EcsCamera()
     {
-        this->set_position(0, 0, -10);
+        this->set_position(0, 0, 10);
         this->set_lookat(0, 0, 0);
         this->set_up(0, 1, 0);
         this->set_fov(90);
@@ -1232,17 +1232,26 @@ sg_pipeline init_pipeline_text() {
         "  float r_dot_v = max(dot(r, v), 0.0);\n"
 
 
-        "  vec2 uv_actual = uv * uv_text.zw + uv_text.xy;\n" // 计算实际的 UV 坐标
+        "  vec2 uv_actual = uv * uv_text.zw + uv_text.xy;\n"  
 
-        "  vec4 colorOfTex = texture(tex, uv_actual);\n"
-        "  vec4 ambient = vec4(u_light_ambient, 1.0) * (color+colorOfTex);\n"
-        "  vec4 diffuse = vec4(u_light_color, 1.0) *  (color+colorOfTex) * dot_n_l;\n"
+        "  float sdf_value = texture(tex, uv_actual).r;\n"
+ 
+        "  float smoothing = fwidth(sdf_value) *0.5 ;\n"
+        "  float distance = sdf_value - 0.5;\n"
+
+      
+        "  float alpha = smoothstep(-smoothing, smoothing, distance);\n"
+        " // float alpha = smoothstep(.0, .9, distance);\n"
+        // 应用颜色和光照
+        "  vec4 base_color = color;\n"  
+        "  vec4 ambient = vec4(u_light_ambient, 1.0) * base_color;\n"
+        "  vec4 diffuse = vec4(u_light_color, 1.0) * base_color * dot_n_l;\n"
         "  vec4 specular = vec4(specular_power * pow(r_dot_v, shininess) * dot_n_l * u_light_color, 1.0);\n"
         "  specular = clamp(specular, 0.0, 1.0);\n"
-        "  frag_color = colorOfTex+  emissive + ambient + diffuse + specular;\n"
-        "  float gray = colorOfTex.r;\n"
-        "  vec4 grayColor = vec4(gray, gray, gray, 1.0);\n"
-        "  frag_color = grayColor + uv.x * uv.y;\n"
+
+        
+        "  frag_color = (emissive + ambient + diffuse + specular) * alpha;\n"
+        "  frag_color = vec4( alpha );\n"
         "}\n";
 
     sg_shader shd = sg_make_shader(&shader_desc);
@@ -1333,6 +1342,14 @@ sg_pipeline init_pipeline_text() {
     pipeline_desc.cull_mode = SG_CULLMODE_BACK;
 
     pipeline_desc.face_winding = SG_FACEWINDING_CCW;
+
+
+    pipeline_desc.colors[0].blend.enabled = true;
+    pipeline_desc.colors[0].blend.src_factor_rgb = SG_BLENDFACTOR_SRC_ALPHA;
+    pipeline_desc.colors[0].blend.dst_factor_rgb = SG_BLENDFACTOR_ONE_MINUS_SRC_ALPHA;
+    pipeline_desc.colors[0].blend.src_factor_alpha = SG_BLENDFACTOR_SRC_ALPHA;
+    pipeline_desc.colors[0].blend.dst_factor_alpha = SG_BLENDFACTOR_ONE_MINUS_SRC_ALPHA;
+
 
     return sg_make_pipeline(&pipeline_desc);
 
@@ -1885,7 +1902,7 @@ void init_queries(flecs::world& world) {
         .with< EcsPosition3>()
         .with< EcsText>()
         .with< EcsRgb>()
-        .with< EcsTransform3>()
+        .with< EcsTransform3>().inout(flecs::InOutDefault)
         .cached()
         .build();
 
@@ -1946,7 +1963,7 @@ void attachGeometry(BufferType& b, flecs::query<>& query, std::function<void(con
     }
     else if constexpr (std::is_same_v<GeometryComponent, EcsText>) {
 
-        printf("\n                  query changed for EcsText. \n");
+        //printf("\n                  query changed for EcsText. \n");
     }
 
 
@@ -2427,7 +2444,7 @@ void _sg_initialize(int w, int h, const std::map<std::string, std::pair<size_t, 
 
         // 创建相机实体
         EcsCamera camera = {};
-        vec3 position = { 0.0f, 0.0f, 20.0f };
+        vec3 position = { 0.0f, 50.0f, 50.0f };
         vec3 lookat = { 0.0f, 0.0f, 0.0f };
         vec3 up = { 0.0f, 1.0f, 0.0f };
 
@@ -2547,33 +2564,67 @@ void _sg_initialize(int w, int h, const std::map<std::string, std::pair<size_t, 
 
 
 
+ //sine
+        //world.system<EcsCamera>()
+        //    .kind(flecs::OnUpdate)
+        //    .each([](flecs::entity e, EcsCamera& camera) {
+        //    // 每秒 60 度，换算成弧度每秒
+        //    const float rotation_speed = glm_rad(60.0f);
+
+        //    // 获取时间增量 (delta time)
+        //    using clock = std::chrono::high_resolution_clock;
+        //    static auto last_time = clock::now();
+        //    auto now = clock::now();
+        //    float delta_time = std::chrono::duration<float>(now - last_time).count();
+        //    last_time = now;
+
+        //    // 累积旋转角度
+        //    static float accumulated_angle = 0.0f;
+        //    accumulated_angle += rotation_speed * delta_time;
+
+        //    // 设置旋转半径 (相机到旋转中心的距离)
+        //    float radius = glm_vec3_norm(camera.position);
+
+        //    // 根据累积角度计算新的相机位置
+        //    camera.position[0] = 50 * cos(accumulated_angle);
+
+
+        //        });
  
-        world.system<EcsCamera>()
-            .kind(flecs::OnUpdate)
-            .each([](flecs::entity e, EcsCamera& camera) {
-            // 每秒 60 度，换算成弧度每秒
-            const float rotation_speed = glm_rad(60.0f);
-
-            // 获取时间增量 (delta time)
-            using clock = std::chrono::high_resolution_clock;
-            static auto last_time = clock::now();
-            auto now = clock::now();
-            float delta_time = std::chrono::duration<float>(now - last_time).count();
-            last_time = now;
-
-            // 累积旋转角度
-            static float accumulated_angle = 0.0f;
-            accumulated_angle += rotation_speed * delta_time;
-
-            // 设置旋转半径 (相机到旋转中心的距离)
-            float radius = glm_vec3_norm(camera.position);
-
-            // 根据累积角度计算新的相机位置
-            camera.position[0] = 50 * cos(accumulated_angle);
 
 
-                });
- 
+    world.system<EcsTransform3, const EcsPosition3>()
+        .kind(flecs::OnUpdate)
+        .with<EcsText>()
+        .each([](flecs::entity e, EcsTransform3& transform, const EcsPosition3& position) {
+        // 定义最大旋转角度（60度）并将其转换为弧度
+        float max_angle = glm_rad(30.0f);
+
+        // 计算时间
+        using clock = std::chrono::high_resolution_clock;
+        static auto start_time = clock::now();
+        auto now = clock::now();
+        static float initRandomFloat = position.x;
+        float time = std::chrono::duration<float>(now  - start_time).count() + initRandomFloat;
+
+        // 使用正弦函数在 0 到 max_angle 之间摆动
+        float angle = max_angle * (0.5f * (1 + sin(time)));  // 正弦函数在 [0, max_angle] 之间变化
+
+        // 重置变换矩阵
+        glm_mat4_identity(transform.value);
+
+        // 应用平移，将字符放置在指定位置
+        vec3 translation = { position.x, position.y, position.z };
+        glm_translate(transform.value, translation);
+
+        // 应用绕 x 轴的旋转
+        glm_rotate_x(transform.value, angle, transform.value);
+
+        // 通知 Flecs 该组件已被修改
+        e.modified<EcsTransform3>();
+            });
+
+
 
   
 
@@ -2895,7 +2946,7 @@ void _sg_initialize(int w, int h, const std::map<std::string, std::pair<size_t, 
 
         EcsPosition3 pos = { -2, -2, -5 };
 
-        EcsRgb color = { .2, .2, .2, 1.0 };
+        EcsRgb color = { 1., 0., 1., 1.0 };
         EcsTransform3 transform;
         init_transform(transform, pos);
 
@@ -2966,6 +3017,55 @@ void _sg_render(int w, int h)
     //    camera.position[0] = new_y;  
     //    });
     int xx = 0;
+
+
+    //world.system<EcsTransform3, const EcsPosition3>()
+    //    .kind(flecs::OnUpdate)
+    //    .with<EcsText>() // Match entities with RotateAroundX tag
+    //    .each([](flecs::entity e, EcsTransform3& transform, const EcsPosition3& position) {
+    //    // Compute rotation angle based on time
+    //    using clock = std::chrono::high_resolution_clock;
+    //    static auto start_time = clock::now();
+    //    auto now = clock::now();
+    //    float time = std::chrono::duration<float>(now - start_time).count();
+
+    //    float angle = time; // Rotate at 1 radian per second
+
+    //    // Reset the transform matrix
+    //    glm_mat4_identity(transform.value);
+
+    //    // Apply translation to the position
+    //    vec3 translation = { position.x, position.y, position.z };
+    //    glm_translate(transform.value, translation);
+
+    //    // Apply rotation around the x-axis
+    //    glm_rotate_x(transform.value, angle, transform.value);
+    //        });
+
+
+
+    //sine
+
+    //world.each([&](flecs::entity e, EcsText text, const EcsPosition3 position, EcsTransform3& transform) {
+
+    //    using clock = std::chrono::high_resolution_clock;
+    //    static auto start_time = clock::now();
+    //    auto now = clock::now();
+    //    float time = std::chrono::duration<float>(now - start_time).count();
+
+    //    float angle = time; // Rotate at 1 radian per second
+
+    //    // Reset the transform matrix
+    //    glm_mat4_identity(transform.value);
+
+    //    // Apply translation to the position
+    //    vec3 translation = { position.x, position.y, position.z };
+    //    glm_translate(transform.value, translation);
+
+    //    // Apply rotation around the x-axis
+    //    glm_rotate_x(transform.value, angle, transform.value);
+
+    //    });
 
     //world.each([&](flecs::entity e, EcsTransform3& transform) {
     //  
