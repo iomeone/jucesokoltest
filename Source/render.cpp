@@ -1274,7 +1274,7 @@ sg_pipeline init_pipeline_text() {
     pipeline_desc.layout.buffers[3].stride = sizeof(float); // Material IDs
     pipeline_desc.layout.buffers[3].step_func = SG_VERTEXSTEP_PER_INSTANCE;
 
-    pipeline_desc.layout.buffers[4].stride = sizeof(vec2); // uv_text
+    pipeline_desc.layout.buffers[4].stride = sizeof(vec4); // uv_text
     pipeline_desc.layout.buffers[4].step_func = SG_VERTEXSTEP_PER_INSTANCE;
 
     pipeline_desc.layout.buffers[5].stride = sizeof(EcsTransform3); // Transforms
@@ -2055,15 +2055,15 @@ void attachGeometry(BufferType& b, flecs::query<>& query, std::function<void(con
 
 
         // Special handling for SokolBufferText
-        if constexpr (std::is_same_v<BufferType, SokolBufferText>) {
-            const EcsText* text = ent.get<EcsText>();
-            if (text) {
-                b.uv_texts[cursor][0] = text->uv_x;        // u0
-                b.uv_texts[cursor][1] = text->uv_y;        // v0
-                b.uv_texts[cursor][2] = text->uv_w;        // u1
-                b.uv_texts[cursor][3] = text->uv_h;        // v1
-            }
-        }
+        //if constexpr (std::is_same_v<BufferType, SokolBufferText>) {
+        //    const EcsText* text = ent.get<EcsText>();
+        //    if (text) {
+        //        b.uv_texts[cursor][0] = text->uv_x;        // u0
+        //        b.uv_texts[cursor][1] = text->uv_y;        // v0
+        //        b.uv_texts[cursor][2] = text->uv_w;        // u1
+        //        b.uv_texts[cursor][3] = text->uv_h;        // v1
+        //    }
+        //}
 
 
         cursor++;
@@ -2115,10 +2115,11 @@ void SokolAttachText(flecs::entity e, SokolBufferText& b) {
     attachGeometry<SokolBufferText, EcsText>(b, text_query, [](const EcsText* text, mat4& transform, SokolBufferText& b, int32_t cursor) {
         vec3 scale = { text->width, text->height, 1.0f };
             glm_scale(transform, scale);
-
-            // 设置 uv_texts
-            b.uv_texts[cursor][0] = text->uv_x;
-            b.uv_texts[cursor][1] = text->uv_y;
+                b.uv_texts[cursor][0] = text->uv_x;        // u0
+                b.uv_texts[cursor][1] = text->uv_y;        // v0
+                b.uv_texts[cursor][2] = text->uv_w;        // u1
+                b.uv_texts[cursor][3] = text->uv_h;        // v1
+          
 
         });
 
@@ -2444,7 +2445,7 @@ void _sg_initialize(int w, int h, const std::map<std::string, std::pair<size_t, 
 
         // 创建相机实体
         EcsCamera camera = {};
-        vec3 position = { 0.0f, 50.0f, 50.0f };
+        vec3 position = { 0.0f, 0.0f, 50.0f };
         vec3 lookat = { 0.0f, 0.0f, 0.0f };
         vec3 up = { 0.0f, 1.0f, 0.0f };
 
@@ -2586,43 +2587,94 @@ void _sg_initialize(int w, int h, const std::map<std::string, std::pair<size_t, 
         //    float radius = glm_vec3_norm(camera.position);
 
         //    // 根据累积角度计算新的相机位置
-        //    camera.position[0] = 50 * cos(accumulated_angle);
+        //    camera.position[2] = 50 * cos(accumulated_angle);
 
 
         //        });
- 
 
 
-    world.system<EcsTransform3, const EcsPosition3>()
+    world.system<EcsCamera>()
         .kind(flecs::OnUpdate)
-        .with<EcsText>()
-        .each([](flecs::entity e, EcsTransform3& transform, const EcsPosition3& position) {
-        // 定义最大旋转角度（60度）并将其转换为弧度
-        float max_angle = glm_rad(30.0f);
-
-        // 计算时间
+        .each([](flecs::entity e, EcsCamera& camera) {
+        // 获取时间增量 (delta time)
         using clock = std::chrono::high_resolution_clock;
-        static auto start_time = clock::now();
+        static auto last_time = clock::now();
         auto now = clock::now();
-        static float initRandomFloat = position.x;
-        float time = std::chrono::duration<float>(now  - start_time).count() + initRandomFloat;
+        float delta_time = std::chrono::duration<float>(now - last_time).count();
+        last_time = now;
 
-        // 使用正弦函数在 0 到 max_angle 之间摆动
-        float angle = max_angle * (0.5f * (1 + sin(time)));  // 正弦函数在 [0, max_angle] 之间变化
+        // 线性移动 z 轴，在 1 和 50 之间往复移动
+        const float z_move_speed = 5.0f;  // 控制 z 轴移动速度
+        const float pause_duration = 2.0f;  // 停顿时长 2 秒
+        static bool moving_toward_1 = true;  // 初始方向为向 1 移动
+        static bool paused_at_1 = false;     // 标记是否在 1 处停顿
+        static auto pause_start_time = clock::now();
 
-        // 重置变换矩阵
-        glm_mat4_identity(transform.value);
-
-        // 应用平移，将字符放置在指定位置
-        vec3 translation = { position.x, position.y, position.z };
-        glm_translate(transform.value, translation);
-
-        // 应用绕 x 轴的旋转
-        glm_rotate_x(transform.value, angle, transform.value);
-
-        // 通知 Flecs 该组件已被修改
-        e.modified<EcsTransform3>();
+        if (paused_at_1) {
+            // 检查停顿是否达到 2 秒
+            if (std::chrono::duration<float>(now - pause_start_time).count() >= pause_duration) {
+                paused_at_1 = false;  // 停顿结束，恢复移动
+                moving_toward_1 = false;  // 开始向 50 移动
+            }
+        }
+        else {
+            if (moving_toward_1) {
+                // 向 1 移动
+                camera.position[2] -= z_move_speed * delta_time;
+                if (camera.position[2] <= 1.0f) {
+                    camera.position[2] = 1.0f;
+                    moving_toward_1 = true;   // 停止在 1
+                    paused_at_1 = true;       // 标记进入停顿
+                    pause_start_time = now;   // 记录停顿开始时间
+                }
+            }
+            else {
+                // 向 50 移动
+                camera.position[2] += z_move_speed * delta_time;
+                if (camera.position[2] >= 50.0f) {
+                    camera.position[2] = 50.0f;
+                    moving_toward_1 = true;  // 改变方向，开始向 1 移动
+                }
+            }
+        }
             });
+
+
+
+
+
+
+
+    //world.system<EcsTransform3, const EcsPosition3>()
+    //    .kind(flecs::OnUpdate)
+    //    .with<EcsText>()
+    //    .each([](flecs::entity e, EcsTransform3& transform, const EcsPosition3& position) {
+    //    // 定义最大旋转角度（60度）并将其转换为弧度
+    //    float max_angle = glm_rad(30.0f);
+
+    //    // 计算时间
+    //    using clock = std::chrono::high_resolution_clock;
+    //    static auto start_time = clock::now();
+    //    auto now = clock::now();
+    //    static float initRandomFloat = position.x;
+    //    float time = std::chrono::duration<float>(now  - start_time).count() + initRandomFloat;
+
+    //    // 使用正弦函数在 0 到 max_angle 之间摆动
+    //    float angle = max_angle * (0.5f * (1 + sin(time)));  // 正弦函数在 [0, max_angle] 之间变化
+
+    //    // 重置变换矩阵
+    //    glm_mat4_identity(transform.value);
+
+    //    // 应用平移，将字符放置在指定位置
+    //    vec3 translation = { position.x, position.y, position.z };
+    //    glm_translate(transform.value, translation);
+
+    //    // 应用绕 x 轴的旋转
+    //    glm_rotate_x(transform.value, angle, transform.value);
+
+    //    // 通知 Flecs 该组件已被修改
+    //    e.modified<EcsTransform3>();
+    //        });
 
 
 
@@ -2849,11 +2901,13 @@ void _sg_initialize(int w, int h, const std::map<std::string, std::pair<size_t, 
 
    
         // Rectangle
-        EcsPosition3 pos1 = { 2.f, 2.f, 0.0f };
-        EcsRectangle rect1 = { 1.f, 1.f };
+        EcsPosition3 pos1 = { 0.f, 0.0f , -10.f };
+        EcsRectangle rect1 = { 400.f, 400.f };
         EcsRgb color1 = { .5f, 0.0f, 0.0f, 1.0f };
         EcsTransform3 transform1;
         init_transform(transform1, pos1);
+
+        //glm_rotate_x(transform1.value, glm_rad(-90.0f), transform1.value);
 
         world.entity()
             .set<EcsPosition3>(pos1)
@@ -2927,7 +2981,7 @@ void _sg_initialize(int w, int h, const std::map<std::string, std::pair<size_t, 
     }
 
 
-    if(1)
+    if(0)
     {
         const int first_char = 32;
 
@@ -2944,7 +2998,7 @@ void _sg_initialize(int w, int h, const std::map<std::string, std::pair<size_t, 
         };
 
 
-        EcsPosition3 pos = { -2, -2, -5 };
+        EcsPosition3 pos = { 0, 0, -5 };
 
         EcsRgb color = { 1., 0., 1., 1.0 };
         EcsTransform3 transform;
@@ -2960,8 +3014,42 @@ void _sg_initialize(int w, int h, const std::map<std::string, std::pair<size_t, 
 
 
     }
- 
 
+ 
+    if (1) {
+        const int first_char = 32;
+        int codepoint = 'A';
+        int index = codepoint - first_char; // 计算字符在数组中的索引
+        SDFChar& sdf_char = state.sdf_chars[index];
+
+        EcsText text = {
+            2, 2,                      // 宽度和高度
+            sdf_char.x0, sdf_char.y0,    // UV 起始坐标
+            sdf_char.x1 - sdf_char.x0,   // UV 宽度
+            sdf_char.y1 - sdf_char.y0    // UV 高度
+        };
+
+        EcsRgb color = { 1.0f, 0.0f, 1.0f, 1.0f }; // 字符颜色
+
+        // 循环生成 1600 个字符实例
+        for (int x = -20; x <= 20; x += 2) {
+            for (int y = -20; y <= 20; y += 2) {
+                // 设置字符的位置
+                EcsPosition3 pos = { static_cast<float>(x),  static_cast<float>(y), 0.f };
+
+                // 初始化变换矩阵
+                EcsTransform3 transform;
+                init_transform(transform, pos);
+
+                // 创建实体并设置组件
+                world.entity()
+                    .set<EcsPosition3>(pos)
+                    .set<EcsText>(text)
+                    .set<EcsRgb>(color)
+                    .set<EcsTransform3>(transform);
+            }
+        }
+    }
 }
 
 
