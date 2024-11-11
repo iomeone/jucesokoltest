@@ -13,6 +13,8 @@
 
 #include <chrono>
 
+#include "quad.h"
+
 #include "pos_color_pipeline.h"
 
 
@@ -2889,11 +2891,8 @@ void _sg_initialize(int w, int h, const std::map<std::string, std::pair<size_t, 
 
             sg_begin_pass(pass);
 
-
-            sg_apply_pipeline(_quard_pipeline->pipeline);
-            
-            sg_apply_bindings(_quard_pipeline->bindings);
-
+            sg_apply_pipeline(_quard_pipeline->pipeline);            
+            sg_apply_bindings(SimpleQuad::Instance().GetBindings());
 
             sg_draw(0, 3, 1);
             sg_end_pass();

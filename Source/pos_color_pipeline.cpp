@@ -69,23 +69,4 @@ SimplePipeline::SimplePipeline(void)
 
 
 
-
-    float vertices[] = {
-        // positions            // colors
-         0.0f,  0.5f, 0.5f,     1.0f, 0.0f, 0.0f, 1.0f,
-         0.5f, -0.5f, 0.5f,     0.0f, 1.0f, 0.0f, 1.0f,
-        -0.5f, -0.5f, 0.5f,     0.0f, 0.0f, 1.0f, 1.0f
-    };
-
-    bindings = (sg_bindings){
-        .vertex_buffers[0] = sg_make_buffer({
-            .data = SG_RANGE(vertices),
-            .label = "framebuffer-vertices",
-            })
-  
-    };
-
-
-
-
 }
