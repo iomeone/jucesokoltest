@@ -13,6 +13,8 @@
 
 #include <chrono>
 
+#include "pos_color_pipeline.h"
+
 
 #include "stb_rect_pack.h"
 
@@ -26,7 +28,7 @@
 #endif // JUCE_WINDOWS
 
 
-
+SimplePipeline* _quard_pipeline = nullptr;
 
 
 #define SOKOL_MAX_EFFECT_INPUTS (8)
@@ -2359,9 +2361,6 @@ void _sg_initialize(int w, int h, const std::map<std::string, std::pair<size_t, 
     ecs_log_set_level(1);
 
 
-
-
-
     world.component<EcsPosition3>();
     world.component<EcsRectangle>();
     world.component<EcsBox>();
@@ -2420,6 +2419,8 @@ void _sg_initialize(int w, int h, const std::map<std::string, std::pair<size_t, 
     sg_setup(&desc);
     assert(sg_isvalid());  // 确保 Sokol 已经初始化
 
+
+    _quard_pipeline = new SimplePipeline();
 
 
     sokol_render_state_t state;
@@ -2723,7 +2724,7 @@ void _sg_initialize(int w, int h, const std::map<std::string, std::pair<size_t, 
             populate_materials(world, mat_u);
         }
 
-        bool run1 = 1;
+        bool run1 = 0;
         if(run1)
         {
             sg_begin_pass(canvas.offscreen_pass);
@@ -2810,7 +2811,7 @@ void _sg_initialize(int w, int h, const std::map<std::string, std::pair<size_t, 
         }
  
 
-        if(1)
+        if(0)
         {
              sg_pass pass = {
                  .action = {
@@ -2876,6 +2877,27 @@ void _sg_initialize(int w, int h, const std::map<std::string, std::pair<size_t, 
         }
 
 
+
+        {
+            sg_pass pass = {
+                .action = {
+                       .colors = { {.load_action = SG_LOADACTION_CLEAR ,
+                                    .clear_value = {0.0f, .3f, .3f, 1.0f }} }
+                    },
+                    .swapchain = {.width = global_width, .height = global_height }
+                };
+
+            sg_begin_pass(pass);
+
+
+            sg_apply_pipeline(_quard_pipeline->pipeline);
+            
+            sg_apply_bindings(_quard_pipeline->bindings);
+
+
+            sg_draw(0, 3, 1);
+            sg_end_pass();
+        }
 
         
         
