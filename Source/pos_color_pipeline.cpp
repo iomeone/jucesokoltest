@@ -26,7 +26,7 @@ const char simple_quad_fs[] = R"(#version 300 es
 
 
 
-SimplePipeline::SimplePipeline(void)
+SimplePipeline::SimplePipeline(sg_primitive_type primitive_type)
 {
     pipeline = sg_make_pipeline((sg_pipeline_desc) {
         .layout = {
@@ -43,6 +43,9 @@ SimplePipeline::SimplePipeline(void)
                 },
             },
         },
+
+        .primitive_type = primitive_type,
+
         .shader = sg_make_shader((sg_shader_desc) {
             .vs =
             {
@@ -85,7 +88,7 @@ SimplePipeline::SimplePipeline(void)
         },
 
         .index_type = SG_INDEXTYPE_UINT16,
-        .primitive_type = SG_PRIMITIVETYPE_LINES,
+        .primitive_type = primitive_type,
         .shader = sg_make_shader((sg_shader_desc) {
             .vs =
             {

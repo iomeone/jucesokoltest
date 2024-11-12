@@ -19,6 +19,8 @@
 
 #include "simple_lemniscate.h"
 
+#include "RoseCurve.h"
+
 
 #ifdef JUCE_WINDOWS
 
@@ -30,6 +32,8 @@
 
 
 SimplePipeline* _quard_pipeline = nullptr;
+
+SimplePipeline* _quard_pipeline_line_strip = nullptr;
 
  
 void my_log(const char* tag, uint32_t log_level, uint32_t log_item_id,
@@ -70,6 +74,8 @@ void _sg_initialize(int w, int h, const std::map<std::string, std::pair<size_t, 
 
     _quard_pipeline = new SimplePipeline();
 
+    _quard_pipeline_line_strip = new SimplePipeline(sg_primitive_type::SG_PRIMITIVETYPE_LINE_STRIP);
+
 }
 
 
@@ -79,6 +85,7 @@ void _sg_shutdown()
  
     SimpleLemniscate::Instance().release();
     delete _quard_pipeline;
+    delete _quard_pipeline_line_strip;
 }
 
 
@@ -107,16 +114,28 @@ void _sg_render(int w, int h)
 
 
             {
-                sg_apply_pipeline(_quard_pipeline->pipeline_use_index);
+                sg_apply_pipeline(_quard_pipeline_line_strip->pipeline_use_index);
                 sg_apply_bindings(SimpleQuad::Instance().GetBindings_use_index());
             }
 
 
-            {
-                //sg_apply_pipeline(_quard_pipeline->pipeline_use_index);
-                //sg_apply_bindings(SimpleLemniscate::Instance().GetBindings());
-            }
+            //{
+            //    sg_apply_pipeline(_quard_pipeline->pipeline_use_index);
+            //    sg_apply_bindings(SimpleLemniscate::Instance().GetBindings());
+            //}
 
+
+            //{
+            //    sg_apply_pipeline(_quard_pipeline_line_strip->pipeline_use_index);
+            //    sg_apply_bindings(SimpleLemniscate::Instance().GetBindings());
+            //}
+
+
+            //{
+            //    sg_apply_pipeline(_quard_pipeline_line_strip->pipeline);
+            //    sg_apply_bindings(RoseCurve::Instance().GetBindings());
+            //}
+   
 
             sg_draw(0, SimpleLemniscate::Instance().GetNumElements(), 1);
             sg_end_pass();

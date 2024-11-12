@@ -14,7 +14,7 @@ struct SimplePipeline
 
     sg_pipeline pipeline_use_index;
 
-    SimplePipeline(void);
+    SimplePipeline(sg_primitive_type primitive_type = _SG_PRIMITIVETYPE_DEFAULT);
 
 };
 

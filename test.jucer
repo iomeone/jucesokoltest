@@ -33,6 +33,8 @@
       </GROUP>
     </GROUP>
     <GROUP id="{F4BFA2C5-5F83-85B8-074D-0394FF02F5C5}" name="Source">
+      <FILE id="vdpCMl" name="RoseCurve.cpp" compile="1" resource="0" file="Source/RoseCurve.cpp"/>
+      <FILE id="aKjbYf" name="RoseCurve.h" compile="0" resource="0" file="Source/RoseCurve.h"/>
       <FILE id="qxiAuo" name="pos_color_pipeline.cpp" compile="1" resource="0"
             file="Source/pos_color_pipeline.cpp"/>
       <FILE id="BMKPVg" name="pos_color_pipeline.h" compile="0" resource="0"

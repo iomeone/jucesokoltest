@@ -77,7 +77,6 @@ SimpleLemniscate::SimpleLemniscate() {
 
     num_elements = static_cast<int>(indices.size());
 
-    // ´´½¨»º³åÇø
     vertex_buffer = sg_make_buffer({
         .type = SG_BUFFERTYPE_VERTEXBUFFER,
         .data = {
