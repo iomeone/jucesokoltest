@@ -56,17 +56,7 @@ SimplePipeline::SimplePipeline(sg_primitive_type primitive_type)
                 .source = simple_quad_fs,
             }
         }),
-            .colors[0] = {
-                .blend = {
-                    .enabled = true,
-                    .src_factor_rgb = SG_BLENDFACTOR_ONE,
-                    .dst_factor_rgb = SG_BLENDFACTOR_ONE,
-                    .op_rgb = SG_BLENDOP_ADD,
-                    .src_factor_alpha = SG_BLENDFACTOR_ONE,
-                    .dst_factor_alpha = SG_BLENDFACTOR_ZERO,
-                    .op_alpha = SG_BLENDOP_ADD,
-                },
-        },
+
         .label = "simple-quad-pipeline",
     });
 
@@ -99,17 +89,7 @@ SimplePipeline::SimplePipeline(sg_primitive_type primitive_type)
                 .source = simple_quad_fs,
             }
         }),
-            .colors[0] = {
-                .blend = {
-                    .enabled = true,
-                    .src_factor_rgb = SG_BLENDFACTOR_ONE,
-                    .dst_factor_rgb = SG_BLENDFACTOR_ONE,
-                    .op_rgb = SG_BLENDOP_ADD,
-                    .src_factor_alpha = SG_BLENDFACTOR_ONE,
-                    .dst_factor_alpha = SG_BLENDFACTOR_ZERO,
-                    .op_alpha = SG_BLENDOP_ADD,
-                },
-        },
+
         .label = "simple-quad-pipeline",
     });
 }

@@ -57,36 +57,6 @@ void MainComponent::initialise()
     // Initialise GL objects for rendering here.
 
     openGLContext.setSwapInterval(0);
-
-
-
-   
-
-
-
-    // 获取当前执行文件所在目录
-    juce::File execDir = juce::File::getSpecialLocation(juce::File::currentExecutableFile).getParentDirectory();
-
-    // 获取同级目录下的 simsun.ttc 文件路径 // DroidSans.ttf
-    juce::File simsunFontFile = execDir.getChildFile("DroidSans.ttf");
-
-    // 读取文件内容到 MemoryBlock
-    juce::MemoryBlock memoryBlock;
-    if (!simsunFontFile.loadFileAsData(memoryBlock))
-    {
-        juce::Logger::outputDebugString("Failed to load DroidSans.ttf");
-        return;
-    }
-
-    // 将 MemoryBlock 数据复制到 std::vector<char>
-    std::vector<unsigned char> memoryBuffer(memoryBlock.getSize());
-    std::memcpy(memoryBuffer.data(), memoryBlock.getData(), memoryBlock.getSize());
-
-    // 创建一个 map，将文件大小和内容存储进去
-
-    fontMap["DroidSans"] = { memoryBlock.getSize(), std::move(memoryBuffer) };
-
-
     _sg_initialize(getWidth(), getHeight(), fontMap);
 
 
