@@ -14,6 +14,8 @@ public:
  
     const sg_bindings& GetBindings() const { return bindings; }
 
+    const sg_bindings& GetBindings_use_index() const { return bindings_use_index; }
+
 private:
  
     SimpleQuad();
@@ -26,4 +28,9 @@ private:
   
     sg_bindings bindings;
     sg_buffer vertex_buffer;
+
+
+
+    sg_buffer index_buffer;
+    sg_bindings bindings_use_index;
 };

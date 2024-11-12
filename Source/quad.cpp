@@ -2,7 +2,7 @@
 
 
 SimpleQuad& SimpleQuad::Instance() {
-    static SimpleQuad instance;  // Î¨Ò»µÄÊµÀý
+    static SimpleQuad instance;
     return instance;
 }
 
@@ -19,7 +19,33 @@ SimpleQuad::SimpleQuad() {
         .label = "quad-vertices",
         });
 
-    bindings = (sg_bindings){
-        .vertex_buffers[0] = vertex_buffer
-    };
+
+    {
+        bindings = (sg_bindings){
+                .vertex_buffers[0] = vertex_buffer
+                };
+    }
+
+
+
+    {
+        uint16_t indices[] = {
+                0, 1, 2 // Triangle
+            };
+
+
+
+        index_buffer = sg_make_buffer({
+            .type = SG_BUFFERTYPE_INDEXBUFFER,
+            .data = SG_RANGE(indices),
+            .label = "quad-indices",
+            });
+
+        bindings_use_index = (sg_bindings){
+            .vertex_buffers[0] = vertex_buffer,
+            .index_buffer = index_buffer,
+        };
+
+    }
+
 }

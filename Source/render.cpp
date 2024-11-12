@@ -17,6 +17,8 @@
 
 #include "pos_color_pipeline.h"
 
+#include "enneper_surface.h"
+
 
 #ifdef JUCE_WINDOWS
 
@@ -93,8 +95,17 @@ void _sg_render(int w, int h)
 
             sg_begin_pass(pass);
 
-            sg_apply_pipeline(_quard_pipeline->pipeline);
-            sg_apply_bindings(SimpleQuad::Instance().GetBindings());
+            
+            //sg_apply_pipeline(_quard_pipeline->pipeline);
+            //sg_apply_bindings(SimpleQuad::Instance().GetBindings());
+
+
+            //sg_apply_pipeline(_quard_pipeline->pipeline_use_index);
+            //sg_apply_bindings(SimpleQuad::Instance().GetBindings_use_index());
+
+            
+            sg_apply_pipeline(_quard_pipeline->pipeline_use_index);
+            sg_apply_bindings(EnneperSurface::Instance().GetBindings());
 
             sg_draw(0, 3, 1);
             sg_end_pass();
