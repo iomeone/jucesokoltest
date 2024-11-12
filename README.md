@@ -31,7 +31,7 @@ Download the following version of JUCE:
    - In the `jucesokoltest` folder, open `test.jucer` with JUCE's Projucer.
    - Navigate to `exporters` in the lower-left corner of the Projucer window.
    - Select your platform’s exporter (e.g., Xcode for macOS/iOS, VS2022/VS2019 for Windows, Makefile for Linux, or Android).
-
+   - If you are compiling on Windows, make sure to use the Visual Studio Installer to install the Clang compiler, and then use Clang when compiling.
 5. **Configure JUCE Path**:
    - Set the JUCE library path in Projucer to the `JUCE` directory you downloaded and renamed.
   
