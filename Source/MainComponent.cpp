@@ -22,6 +22,9 @@ MainComponent::MainComponent()
 
     this->openGLContext.setComponentPaintingEnabled(false);
 
+    addAndMakeVisible(button);
+    button.setButtonText("Click Me");
+
     // Make sure you set the size of the component after
     // you add any child components.
     setSize (800, 600);
@@ -100,5 +103,5 @@ void MainComponent::resized()
     // If you add any child components, this is where you should
     // update their positions.
 
-
+    button.setBounds(10, 10, 100, 40);
 }

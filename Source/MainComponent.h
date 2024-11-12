@@ -68,5 +68,7 @@ private:
     std::map<std::string, std::pair<size_t, std::vector<unsigned char>>> fontMap;
 
 
+    juce::TextButton button{ "Click Me" };
+
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (MainComponent)
 };
