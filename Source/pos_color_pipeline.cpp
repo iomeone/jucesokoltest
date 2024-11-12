@@ -85,7 +85,7 @@ SimplePipeline::SimplePipeline(void)
         },
 
         .index_type = SG_INDEXTYPE_UINT16,
-
+        .primitive_type = SG_PRIMITIVETYPE_LINES,
         .shader = sg_make_shader((sg_shader_desc) {
             .vs =
             {

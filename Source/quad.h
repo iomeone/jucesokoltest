@@ -16,6 +16,9 @@ public:
 
     const sg_bindings& GetBindings_use_index() const { return bindings_use_index; }
 
+
+    int GetNumElements() const { return 3; }
+
 private:
  
     SimpleQuad();

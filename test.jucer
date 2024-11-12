@@ -5,10 +5,10 @@
               headerPath="../../Source">
   <MAINGROUP id="AEHFTP" name="test">
     <GROUP id="{599C3BB3-D07C-FCA9-D8A5-91687F4A816C}" name="geometry">
-      <FILE id="KBVepf" name="enneper_surface.cpp" compile="1" resource="0"
-            file="Source/enneper_surface.cpp"/>
-      <FILE id="jDTnHs" name="enneper_surface.h" compile="0" resource="0"
-            file="Source/enneper_surface.h"/>
+      <FILE id="KBVepf" name="simple_lemniscate.cpp" compile="1" resource="0"
+            file="Source/simple_lemniscate.cpp"/>
+      <FILE id="jDTnHs" name="simple_lemniscate.h" compile="0" resource="0"
+            file="Source/simple_lemniscate.h"/>
       <FILE id="JiMPJ5" name="quad.cpp" compile="1" resource="0" file="Source/quad.cpp"/>
       <FILE id="h0NWsF" name="quad.h" compile="0" resource="0" file="Source/quad.h"/>
     </GROUP>

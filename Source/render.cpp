@@ -17,7 +17,7 @@
 
 #include "pos_color_pipeline.h"
 
-#include "enneper_surface.h"
+#include "simple_lemniscate.h"
 
 
 #ifdef JUCE_WINDOWS
@@ -76,6 +76,8 @@ void _sg_initialize(int w, int h, const std::map<std::string, std::pair<size_t, 
 
 void _sg_shutdown() 
 {
+ 
+    SimpleLemniscate::Instance().release();
     delete _quard_pipeline;
 }
 
@@ -88,7 +90,7 @@ void _sg_render(int w, int h)
             sg_pass pass = {
                             .action = {
                                    .colors = { {.load_action = SG_LOADACTION_CLEAR ,
-                                                .clear_value = {0.0f, .3f, .3f, 1.0f }} }
+                                                .clear_value = {0.0f, .1f, .0f, 1.0f }} }
                             },
                             .swapchain = {.width = w, .height = h }
             };
@@ -96,18 +98,27 @@ void _sg_render(int w, int h)
             sg_begin_pass(pass);
 
             
-            //sg_apply_pipeline(_quard_pipeline->pipeline);
-            //sg_apply_bindings(SimpleQuad::Instance().GetBindings());
+
+            {
+                //sg_apply_pipeline(_quard_pipeline->pipeline);
+                //sg_apply_bindings(SimpleQuad::Instance().GetBindings());
+            }
 
 
-            //sg_apply_pipeline(_quard_pipeline->pipeline_use_index);
-            //sg_apply_bindings(SimpleQuad::Instance().GetBindings_use_index());
 
-            
-            sg_apply_pipeline(_quard_pipeline->pipeline_use_index);
-            sg_apply_bindings(EnneperSurface::Instance().GetBindings());
+            {
+                sg_apply_pipeline(_quard_pipeline->pipeline_use_index);
+                sg_apply_bindings(SimpleQuad::Instance().GetBindings_use_index());
+            }
 
-            sg_draw(0, 3, 1);
+
+            {
+                //sg_apply_pipeline(_quard_pipeline->pipeline_use_index);
+                //sg_apply_bindings(SimpleLemniscate::Instance().GetBindings());
+            }
+
+
+            sg_draw(0, SimpleLemniscate::Instance().GetNumElements(), 1);
             sg_end_pass();
         }
 

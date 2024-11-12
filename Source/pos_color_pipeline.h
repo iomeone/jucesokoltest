@@ -14,7 +14,6 @@ struct SimplePipeline
 
     sg_pipeline pipeline_use_index;
 
-
     SimplePipeline(void);
 
 };
