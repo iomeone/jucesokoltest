@@ -31,7 +31,7 @@ Download the following version of JUCE:
    - In the `jucesokoltest` folder, open `test.jucer` with JUCE's Projucer.
    - Navigate to `exporters` in the lower-left corner of the Projucer window.
    - Select your platform’s exporter (e.g., Xcode for macOS/iOS, VS2022/VS2019 for Windows, Makefile for Linux, or Android).
-
+   - If you are compiling on Windows, make sure to use the Visual Studio Installer to install the Clang compiler, and then use Clang when compiling.
 5. **Configure JUCE Path**:
    - Set the JUCE library path in Projucer to the `JUCE` directory you downloaded and renamed.
   
@@ -76,6 +76,7 @@ Download the following version of JUCE:
    - 在 `jucesokoltest` 文件夹中，用 Projucer 打开 `test.jucer` 文件。
    - 在 Projucer 窗口左下角导航到 `exporters`。
    - 选择您平台的导出选项（例如，macOS/iOS 的 Xcode，Windows 的 VS2022/VS2019，Linux 的 Makefile，或 Android）。
+   - 如果你在windows上编译，请确保使用visual studio安装程序安装 clang 编译器，然后编译的时候使用clange
 
 5. **配置 JUCE 路径**:
    - 在 Projucer 中将 JUCE 库路径设置为下载并重命名的 `JUCE` 目录。
