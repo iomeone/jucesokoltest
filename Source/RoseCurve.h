@@ -7,7 +7,7 @@ public:
     static RoseCurve& Instance();
 
     const sg_bindings& GetBindings() const { return bindings; }
-    int GetVertexCount() const { return vertex_count; }
+    int GetNumElements() const { return vertex_count; }
 
 private:
     RoseCurve();
