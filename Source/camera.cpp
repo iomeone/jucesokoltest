@@ -100,73 +100,73 @@ namespace batteries
     }
   }
 
-  //void CameraController::Event(const sapp_event *e)
-  //{
-  //  switch (e->type)
-  //  {
-  //  case SAPP_EVENTTYPE_KEY_DOWN:
-  //    if (e->key_code == SAPP_KEYCODE_W || e->key_code == SAPP_KEYCODE_UP)
-  //    {
-  //      move_forward = true;
-  //    }
-  //    else if (e->key_code == SAPP_KEYCODE_S || e->key_code == SAPP_KEYCODE_DOWN)
-  //    {
-  //      move_backward = true;
-  //    }
-  //    else if (e->key_code == SAPP_KEYCODE_A || e->key_code == SAPP_KEYCODE_LEFT)
-  //    {
-  //      move_left = true;
-  //    }
-  //    else if (e->key_code == SAPP_KEYCODE_D || e->key_code == SAPP_KEYCODE_RIGHT)
-  //    {
-  //      move_right = true;
-  //    }
-  //    break;
-  //  case SAPP_EVENTTYPE_KEY_UP:
-  //    if (e->key_code == SAPP_KEYCODE_W || e->key_code == SAPP_KEYCODE_UP)
-  //    {
-  //      move_forward = false;
-  //    }
-  //    else if (e->key_code == SAPP_KEYCODE_S || e->key_code == SAPP_KEYCODE_DOWN)
-  //    {
-  //      move_backward = false;
-  //    }
-  //    else if (e->key_code == SAPP_KEYCODE_A || e->key_code == SAPP_KEYCODE_LEFT)
-  //    {
-  //      move_left = false;
-  //    }
-  //    else if (e->key_code == SAPP_KEYCODE_D || e->key_code == SAPP_KEYCODE_RIGHT)
-  //    {
-  //      move_right = false;
-  //    }
-  //    break;
-  //  case SAPP_EVENTTYPE_MOUSE_DOWN:
-  //    if (e->mouse_button == SAPP_MOUSEBUTTON_LEFT)
-  //    {
-  //      sapp_lock_mouse(true);
-  //    }
-  //    break;
-  //  case SAPP_EVENTTYPE_MOUSE_UP:
-  //    if (e->mouse_button == SAPP_MOUSEBUTTON_LEFT)
-  //    {
-  //      sapp_lock_mouse(false);
-  //    }
-  //    break;
-  //  case SAPP_EVENTTYPE_MOUSE_SCROLL:
-  //    distance = glm::clamp(min_dist, distance + (e->scroll_y * 0.5f), max_dist);
-  //    break;
-  //  case SAPP_EVENTTYPE_MOUSE_MOVE:
-  //    if (sapp_mouse_locked())
-  //    {
-  //      yaw += e->mouse_dx * settings.dampening;
-  //      pitch -= e->mouse_dy * settings.dampening;
-  //      pitch = glm::clamp(min_pitch, pitch, max_pitch);
-  //    }
-  //    break;
-  //  default:
-  //    break;
-  //  }
-  //}
+  void CameraController::Event(const sapp_event *e)
+  {
+    switch (e->type)
+    {
+    case SAPP_EVENTTYPE_KEY_DOWN:
+      if (e->key_code == SAPP_KEYCODE_W || e->key_code == SAPP_KEYCODE_UP)
+      {
+        move_forward = true;
+      }
+      else if (e->key_code == SAPP_KEYCODE_S || e->key_code == SAPP_KEYCODE_DOWN)
+      {
+        move_backward = true;
+      }
+      else if (e->key_code == SAPP_KEYCODE_A || e->key_code == SAPP_KEYCODE_LEFT)
+      {
+        move_left = true;
+      }
+      else if (e->key_code == SAPP_KEYCODE_D || e->key_code == SAPP_KEYCODE_RIGHT)
+      {
+        move_right = true;
+      }
+      break;
+    case SAPP_EVENTTYPE_KEY_UP:
+      if (e->key_code == SAPP_KEYCODE_W || e->key_code == SAPP_KEYCODE_UP)
+      {
+        move_forward = false;
+      }
+      else if (e->key_code == SAPP_KEYCODE_S || e->key_code == SAPP_KEYCODE_DOWN)
+      {
+        move_backward = false;
+      }
+      else if (e->key_code == SAPP_KEYCODE_A || e->key_code == SAPP_KEYCODE_LEFT)
+      {
+        move_left = false;
+      }
+      else if (e->key_code == SAPP_KEYCODE_D || e->key_code == SAPP_KEYCODE_RIGHT)
+      {
+        move_right = false;
+      }
+      break;
+    case SAPP_EVENTTYPE_MOUSE_DOWN:
+      if (e->mouse_button == SAPP_MOUSEBUTTON_LEFT)
+      {
+        sapp_lock_mouse(true);
+      }
+      break;
+    case SAPP_EVENTTYPE_MOUSE_UP:
+      if (e->mouse_button == SAPP_MOUSEBUTTON_LEFT)
+      {
+        sapp_lock_mouse(false);
+      }
+      break;
+    case SAPP_EVENTTYPE_MOUSE_SCROLL:
+      distance = glm::clamp(min_dist, distance + (e->scroll_y * 0.5f), max_dist);
+      break;
+    case SAPP_EVENTTYPE_MOUSE_MOVE:
+      if (sapp_mouse_locked())
+      {
+        yaw += e->mouse_dx * settings.dampening;
+        pitch -= e->mouse_dy * settings.dampening;
+        pitch = glm::clamp(min_pitch, pitch, max_pitch);
+      }
+      break;
+    default:
+      break;
+    }
+  }
 
   void CameraController::Debug(void)
   {

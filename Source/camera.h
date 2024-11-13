@@ -55,7 +55,7 @@ namespace batteries
     void SetMode(const Mode mode);
 
     void Update(float dt);
-    //void Event(const sapp_event *e);
+    void Event(const sapp_event *e);
     void Debug(void);
 
   private:
