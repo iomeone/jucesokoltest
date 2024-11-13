@@ -78,8 +78,26 @@ void MainComponent::render()
     // This clears the context with a black background.
     //juce::OpenGLHelpers::clear (juce::Colours::black);
 
+    //openGLContext.bind
+
+
+
+    //openGLContext.extensions.glBindFramebuffer(juce::gl::GL_FRAMEBUFFER, openGLContext.getFrameBufferID());
+
+    //juce::gl::glClear(juce::gl::GL_COLOR_BUFFER_BIT | juce::gl::GL_DEPTH_BUFFER_BIT | juce::gl::GL_STENCIL_BUFFER_BIT);
+
+
 
     _sg_render(getWidth(), getHeight());
+
+    //openGLContext.extensions.glBindFramebuffer(juce::gl::GL_FRAMEBUFFER, 0);  // 0 表示默认帧缓冲区
+
+
+
+    //juce::gl::glEnable(juce::gl::GL_DEPTH_TEST);
+    //juce::gl::glDisable(juce::gl::GL_BLEND);
+  
+
 
     if (_fps.incFrameCount())
     {
