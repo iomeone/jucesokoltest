@@ -99,8 +99,30 @@ namespace batteries
     }
     }
   }
+  /*
+  
+  
+          float cameraSpeed = 0.5f; //
+        if (key == 'w' || key == 'W')
+        {
+            camera.ProcessKeyboard(Camera_Movement::FORWARD, cameraSpeed);
 
-  void CameraController::Event(const sapp_event *e)
+        }
+        if (key == 's' || key == 'S')
+        {
+            camera.ProcessKeyboard(Camera_Movement::BACKWARD, cameraSpeed);
+        }
+        if (key == 'a' || key == 'A')
+        {
+            camera.ProcessKeyboard(Camera_Movement::LEFT, cameraSpeed);
+
+        }
+        if (key == 'd' || key == 'D')
+        {
+            camera.ProcessKeyboard(Camera_Movement::RIGHT, cameraSpeed);
+        }
+        */
+  void CameraController::Event(const juce::KeyPress& key)
   {
     switch (e->type)
     {

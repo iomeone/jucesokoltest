@@ -3,7 +3,7 @@
 // glm
 #include "glm/mat4x4.hpp"
 #include "glm/vec3.hpp"
-
+#include <JuceHeader.h>
 namespace batteries
 {
   class Camera
@@ -55,7 +55,7 @@ namespace batteries
     void SetMode(const Mode mode);
 
     void Update(float dt);
-    void Event(const sapp_event *e);
+    void Event(const juce::KeyPress& key);
     void Debug(void);
 
   private:

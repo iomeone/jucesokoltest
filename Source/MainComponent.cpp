@@ -16,6 +16,9 @@
 
 #include "render.h"
 
+#include "camera.h"
+extern batteries::Camera camera;
+
 //==============================================================================
 MainComponent::MainComponent()
 {
@@ -122,4 +125,14 @@ void MainComponent::resized()
     // update their positions.
 
     button.setBounds(10, 10, 100, 40);
+}
+
+bool MainComponent::keyPressed(const juce::KeyPress& key)
+{
+    Event(key);
+    
+    
+    
+    return false;
+
 }

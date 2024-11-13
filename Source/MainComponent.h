@@ -60,6 +60,11 @@ public:
     void paint (juce::Graphics& g) override;
     void resized() override;
 
+
+
+    bool keyPressed(const juce::KeyPress& key) override;
+
+
 private:
     //==============================================================================
     // Your private member variables go here...
