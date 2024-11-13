@@ -1,6 +1,10 @@
 #include "pos_color_pipeline.h"
 
-
+struct vs_params_t
+{
+    glm::mat4 view_proj;
+    //glm::mat4 model;
+};
 
 
 const char simple_quad_vs[] = R"(#version 300 es
@@ -8,6 +12,7 @@ const char simple_quad_vs[] = R"(#version 300 es
         layout(location = 0) in vec4 in_position;
         layout(location = 1) in vec4 in_color;
 
+        uniform mat4 view_proj;
         out vec4 color;
 
         void main()
@@ -44,12 +49,26 @@ SimplePipeline::SimplePipeline(sg_primitive_type primitive_type)
             },
         },
 
+
+
         .primitive_type = primitive_type,
 
         .shader = sg_make_shader((sg_shader_desc) {
             .vs =
             {
                 .source = simple_quad_vs,
+                .uniform_blocks = {
+                    [0] = {
+                       
+                        .layout = SG_UNIFORMLAYOUT_NATIVE,
+                        .size = sizeof(vs_params_t),
+                        
+                        .uniforms = {
+                            [0] = {.name = "view_proj", .type = SG_UNIFORMTYPE_MAT4},
+                            //[1] = {.name = "model", .type = SG_UNIFORMTYPE_MAT4},
+                        },
+                    },
+        }
             },
             .fs =
             {
