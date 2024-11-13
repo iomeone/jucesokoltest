@@ -90,7 +90,7 @@ void MainComponent::render()
 
     _sg_render(getWidth(), getHeight());
 
-    //openGLContext.extensions.glBindFramebuffer(juce::gl::GL_FRAMEBUFFER, 0);  // 0 表示默认帧缓冲区
+    //openGLContext.extensions.glBindFramebuffer(juce::gl::GL_FRAMEBUFFER, 0);
 
 
 

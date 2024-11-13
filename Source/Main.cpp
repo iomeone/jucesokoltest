@@ -10,7 +10,6 @@
 #include "MainComponent.h"
 
 
-// Windows 平台专用
 #ifdef JUCE_WINDOWS
 #include <windows.h>
 #include <stdio.h>
@@ -34,11 +33,11 @@ public:
 
 
 
-        // 打开控制台窗口，Windows 专用
+        
 #ifdef JUCE_WINDOWS
         AllocConsole();
-        freopen("CONOUT$", "w", stdout);  // 将 stdout 重定向到控制台
-        freopen("CONOUT$", "w", stderr);  // 将 stderr 重定向到控制台
+        freopen("CONOUT$", "w", stdout);
+        freopen("CONOUT$", "w", stderr);
         printf("Log is showing here:\n");
 #endif
 

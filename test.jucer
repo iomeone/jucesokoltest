@@ -43,6 +43,8 @@
       </GROUP>
     </GROUP>
     <GROUP id="{F4BFA2C5-5F83-85B8-074D-0394FF02F5C5}" name="Source">
+      <FILE id="mtGotA" name="camera.cpp" compile="1" resource="0" file="Source/camera.cpp"/>
+      <FILE id="FDxFo7" name="camera.h" compile="0" resource="0" file="Source/camera.h"/>
       <FILE id="UjBU96" name="framebuffer.cpp" compile="1" resource="0" file="Source/framebuffer.cpp"/>
       <FILE id="OlbYIb" name="framebuffer.h" compile="0" resource="0" file="Source/framebuffer.h"/>
       <FILE id="FNArEN" name="render.cpp" compile="1" resource="0" file="Source/render.cpp"/>
