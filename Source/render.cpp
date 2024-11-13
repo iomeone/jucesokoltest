@@ -24,6 +24,9 @@
 #include "CircleShape.h"
 
 
+#include "camera.h"
+
+
 #ifdef JUCE_WINDOWS
 
 #include <Windows.h>
@@ -36,6 +39,17 @@
 SimplePipeline* _quard_pipeline = nullptr;
 
 SimplePipeline* _quard_pipeline_line_strip = nullptr;
+
+
+
+batteries::Camera camera;
+
+
+
+
+
+
+
 
  
 void my_log(const char* tag, uint32_t log_level, uint32_t log_item_id,
@@ -96,6 +110,16 @@ void _sg_shutdown()
 void _sg_render(int w, int h)
 {
 
+
+    const auto view_proj = camera.Projection() * camera.View();
+
+
+    const vs_params_t vs_blinnphong_params = {
+        .view_proj = view_proj,
+
+    };
+
+
         {
             sg_pass pass = {
                             .action = {
@@ -111,6 +135,10 @@ void _sg_render(int w, int h)
 
             {
                 sg_apply_pipeline(_quard_pipeline->pipeline);
+
+                sg_apply_uniforms(SG_SHADERSTAGE_VS,0, SG_RANGE(vs_blinnphong_params));
+
+
                 sg_apply_bindings(SimpleQuad::Instance().GetBindings());
                 sg_draw(0, SimpleQuad::Instance().GetNumElements(), 1);
             }

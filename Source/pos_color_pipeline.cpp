@@ -1,10 +1,6 @@
 #include "pos_color_pipeline.h"
 
-struct vs_params_t
-{
-    glm::mat4 view_proj;
-    //glm::mat4 model;
-};
+
 
 
 const char simple_quad_vs[] = R"(#version 300 es
@@ -17,7 +13,7 @@ const char simple_quad_vs[] = R"(#version 300 es
 
         void main()
         {
-            gl_Position = in_position;
+            gl_Position = view_proj * in_position;
             color = in_color;
         })";
 const char simple_quad_fs[] = R"(#version 300 es
