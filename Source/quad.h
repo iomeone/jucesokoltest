@@ -19,6 +19,7 @@ public:
 
     int GetNumElements() const { return 3; }
 
+    void release();
 private:
  
     SimpleQuad();

@@ -60,6 +60,6 @@ CircleShape::CircleShape() {
     };
 }
 
-CircleShape::~CircleShape() {
+void CircleShape::release() {
     sg_destroy_buffer(vertex_buffer);
 }

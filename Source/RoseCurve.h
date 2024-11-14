@@ -8,10 +8,9 @@ public:
 
     const sg_bindings& GetBindings() const { return bindings; }
     int GetNumElements() const { return vertex_count; }
-
+    void release();
 private:
     RoseCurve();
-    ~RoseCurve();
 
     RoseCurve(const RoseCurve&) = delete;
     RoseCurve& operator=(const RoseCurve&) = delete;

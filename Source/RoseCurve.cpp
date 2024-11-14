@@ -60,6 +60,6 @@ RoseCurve::RoseCurve() {
     };
 }
 
-RoseCurve::~RoseCurve() {
+void RoseCurve::release() {
     sg_destroy_buffer(vertex_buffer);
 }

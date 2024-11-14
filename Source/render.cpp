@@ -40,7 +40,13 @@
 
 SimplePipeline* _quard_pipeline = nullptr;
 
+
+SimplePipeline* _quard_pipeline_line = nullptr;
+
 SimplePipeline* _quard_pipeline_line_strip = nullptr;
+
+
+
 
 
 
@@ -107,6 +113,9 @@ void _sg_initialize(int w, int h, const std::map<std::string, std::pair<size_t, 
 
     _quard_pipeline_line_strip = new SimplePipeline(sg_primitive_type::SG_PRIMITIVETYPE_LINE_STRIP);
 
+
+    _quard_pipeline_line = new SimplePipeline(sg_primitive_type::SG_PRIMITIVETYPE_LINES);
+
 }
 
 
@@ -152,12 +161,12 @@ void _sg_render(int w, int h)
 
             
 
-            {
-                sg_apply_pipeline(_quard_pipeline->pipeline);
-                sg_apply_uniforms(SG_SHADERSTAGE_VS,0, SG_RANGE(vs_blinnphong_params));
-                sg_apply_bindings(SimpleQuad::Instance().GetBindings());
-                sg_draw(0, SimpleQuad::Instance().GetNumElements(), 1);
-            }
+            //{
+            //    sg_apply_pipeline(_quard_pipeline->pipeline);
+            //    sg_apply_uniforms(SG_SHADERSTAGE_VS,0, SG_RANGE(vs_blinnphong_params));
+            //    sg_apply_bindings(SimpleQuad::Instance().GetBindings());
+            //    sg_draw(0, SimpleQuad::Instance().GetNumElements(), 1);
+            //}
 
 
 
@@ -169,20 +178,20 @@ void _sg_render(int w, int h)
             //}
 
 
-            //{
-            //    sg_apply_pipeline(_quard_pipeline->pipeline_use_index);
-            //    sg_apply_uniforms(SG_SHADERSTAGE_VS, 0, SG_RANGE(vs_blinnphong_params));
-            //    sg_apply_bindings(SimpleLemniscate::Instance().GetBindings());
-            //    sg_draw(0, SimpleLemniscate::Instance().GetNumElements(), 1);
-            //}
+            {
+                sg_apply_pipeline(_quard_pipeline->pipeline_use_index);
+                sg_apply_uniforms(SG_SHADERSTAGE_VS, 0, SG_RANGE(vs_blinnphong_params));
+                sg_apply_bindings(SimpleLemniscate::Instance().GetBindings());
+                sg_draw(0, SimpleLemniscate::Instance().GetNumElements(), 1);
+            }
 
 
-            //{
-            //    sg_apply_pipeline(_quard_pipeline_line_strip->pipeline);
-            //    sg_apply_uniforms(SG_SHADERSTAGE_VS, 0, SG_RANGE(vs_blinnphong_params));
-            //    sg_apply_bindings(GridShape::Instance().GetBindings());
-            //    sg_draw(0, GridShape::Instance().GetNumElements(), 1);
-            //}
+            {
+                sg_apply_pipeline(_quard_pipeline_line->pipeline);
+                sg_apply_uniforms(SG_SHADERSTAGE_VS, 0, SG_RANGE(vs_blinnphong_params));
+                sg_apply_bindings(GridShape::Instance().GetBindings());
+                sg_draw(0, GridShape::Instance().GetNumElements(), 1);
+            }
 
 
             //{
@@ -192,11 +201,12 @@ void _sg_render(int w, int h)
             //}
 
 
-            //{
-            //    sg_apply_pipeline(_quard_pipeline_line_strip->pipeline);
-            //    sg_apply_bindings(RoseCurve::Instance().GetBindings());
-            //    sg_draw(0, RoseCurve::Instance().GetNumElements(), 1);
-            //}
+            {
+                sg_apply_pipeline(_quard_pipeline_line_strip->pipeline);
+                sg_apply_uniforms(SG_SHADERSTAGE_VS, 0, SG_RANGE(vs_blinnphong_params));
+                sg_apply_bindings(RoseCurve::Instance().GetBindings());
+                sg_draw(0, RoseCurve::Instance().GetNumElements(), 1);
+            }
 
 
             //{
@@ -207,11 +217,12 @@ void _sg_render(int w, int h)
             //}
 
 
-            //{
-            //    sg_apply_pipeline(_quard_pipeline_line_strip->pipeline);
-            //    sg_apply_bindings(CircleShape::Instance().GetBindings());
-            //    sg_draw(0, CircleShape::Instance().GetNumElements(), 1);
-            //}
+            {
+                sg_apply_pipeline(_quard_pipeline_line_strip->pipeline);
+                sg_apply_uniforms(SG_SHADERSTAGE_VS, 0, SG_RANGE(vs_blinnphong_params));
+                sg_apply_bindings(CircleShape::Instance().GetBindings());
+                sg_draw(0, CircleShape::Instance().GetNumElements(), 1);
+            }
    
 
             

@@ -49,3 +49,7 @@ SimpleQuad::SimpleQuad() {
     }
 
 }
+
+void SimpleQuad::release() {
+    sg_destroy_buffer(vertex_buffer);
+}
