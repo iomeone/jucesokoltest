@@ -155,7 +155,6 @@ bool MainComponent::keyStateChanged(bool isKeyDown)
             {
                 if (!juce::KeyPress::isKeyCurrentlyDown(keyEvent.key_code))
                 {
-                    // 按键被松开，处理相关事件
                     keyEvent.type = e_key_up;
                     cameracontroller.Event(keyEvent);
                 }

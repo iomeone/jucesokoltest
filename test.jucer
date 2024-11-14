@@ -11,6 +11,8 @@
             file="Source/pos_color_pipeline.h"/>
     </GROUP>
     <GROUP id="{599C3BB3-D07C-FCA9-D8A5-91687F4A816C}" name="geometry">
+      <FILE id="azHyZy" name="GridShape.cpp" compile="1" resource="0" file="Source/GridShape.cpp"/>
+      <FILE id="OZiYnc" name="GridShape.h" compile="0" resource="0" file="Source/GridShape.h"/>
       <FILE id="hhFgO9" name="CircleShape.cpp" compile="1" resource="0" file="Source/CircleShape.cpp"/>
       <FILE id="FoPR9t" name="CircleShape.h" compile="0" resource="0" file="Source/CircleShape.h"/>
       <FILE id="vdpCMl" name="RoseCurve.cpp" compile="1" resource="0" file="Source/RoseCurve.cpp"/>
