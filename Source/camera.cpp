@@ -88,6 +88,16 @@ namespace batteries
         camera->position += camera->right * velocity;
       }
 
+      if (move_up)
+      {
+          camera->position += camera->up * velocity;
+      }
+      if (move_down)
+      {
+          camera->position -= camera->up * velocity;
+      }
+
+
       camera->front = euclidean(yaw, pitch);
       camera->right = glm::normalize(glm::cross(camera->front, {0.0f, 1.0f, 0.0f}));
       camera->up = glm::normalize(glm::cross(camera->right, camera->front));
@@ -126,6 +136,14 @@ namespace batteries
           {
               move_right = true;
           }
+          else if (key.key_code == 'Q' || key.key_code == 'q')
+          {
+              move_down = true;
+          }
+          else if (key.key_code == 'E' || key.key_code == 'e')
+          {
+              move_up = true;
+          }
           break;
       case e_key_up:
           if (key.key_code == 'W' || key.key_code == juce::KeyPress::upKey)
@@ -144,6 +162,14 @@ namespace batteries
           {
               move_right = false;
           }
+          else if (key.key_code == 'Q' || key.key_code == 'q')
+          {
+              move_down = false;
+          }
+          else if (key.key_code == 'E' || key.key_code == 'e')
+          {
+              move_up = false;
+          }
           break;
 
      case e_mouse_down:
@@ -160,6 +186,7 @@ namespace batteries
       break;
     case e_mouse_scroll:
       distance = glm::clamp(min_dist, distance + (key.scroll_y * 0.5f), max_dist);
+      camera->position += camera->front * key.scroll_y;
       break;
     case e_mouse_move:
       if (ismouseDown)

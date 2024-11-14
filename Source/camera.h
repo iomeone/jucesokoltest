@@ -82,6 +82,8 @@ namespace batteries
     bool move_backward = false;
     bool move_left = false;
     bool move_right = false;
+    bool move_up = false;
+    bool move_down = false; 
 
     struct
     {
