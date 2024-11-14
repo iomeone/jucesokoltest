@@ -92,11 +92,13 @@ namespace batteries
       camera->right = glm::normalize(glm::cross(camera->front, {0.0f, 1.0f, 0.0f}));
       camera->up = glm::normalize(glm::cross(camera->right, camera->front));
       camera->center = camera->position + camera->front;
+      break;
     }
     case Mode::Orbit:
     {
       camera->center = {0.0f, 0.0f, 0.0f};
       camera->position = camera->center + euclidean(yaw, pitch) * distance;
+      break;
     }
     }
   }
