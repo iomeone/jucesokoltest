@@ -18,12 +18,13 @@
 
 #include "camera.h"
 extern batteries::Camera camera;
+extern batteries::CameraController cameracontroller;
 
 //==============================================================================
 MainComponent::MainComponent()
 {
 
-    this->openGLContext.setComponentPaintingEnabled(false);
+    this->openGLContext.setComponentPaintingEnabled(true);
 
     addAndMakeVisible(button);
     button.setButtonText("Click Me");
@@ -62,7 +63,7 @@ void MainComponent::initialise()
 {
     // Initialise GL objects for rendering here.
 
-    openGLContext.setSwapInterval(0);
+    openGLContext.setSwapInterval(1);
     _sg_initialize(getWidth(), getHeight(), fontMap);
 
 
@@ -127,12 +128,37 @@ void MainComponent::resized()
     button.setBounds(10, 10, 100, 40);
 }
 
+
+
 bool MainComponent::keyPressed(const juce::KeyPress& key)
 {
-    Event(key);
     
     
+
     
     return false;
 
+}
+
+bool MainComponent::keyStateChanged(bool isKeyDown)
+{
+
+    if (isKeyDown)
+    {
+        if (juce::KeyPress::isKeyCurrentlyDown(  somekey ))
+        {
+            DBG("SPACE DOWN");
+        }
+    }
+    else
+    {
+       
+        if (!juce::KeyPress::isKeyCurrentlyDown( somekey))
+        {
+            DBG("SPACE UP"); // never called
+        }
+    }
+
+
+    return false;
 }

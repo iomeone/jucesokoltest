@@ -42,9 +42,10 @@ SimplePipeline* _quard_pipeline_line_strip = nullptr;
 
 
 
+
+
 batteries::Camera camera;
-
-
+batteries::CameraController cameracontroller;
 
 
 
@@ -73,6 +74,18 @@ void my_log(const char* tag, uint32_t log_level, uint32_t log_item_id,
 
 void _sg_initialize(int w, int h, const std::map<std::string, std::pair<size_t, std::vector<unsigned char>>>& fontMap)
 {
+
+    cameracontroller.SetCamera(&camera);
+    //cameracontroller.Configure({
+    //    .mode = (int)batteries::CameraController::Mode::Orbit,
+    //    .pitch = 30.0f,
+    //    .yaw = 90.0f,
+    //    .distance = 10.0f,
+    //    });
+
+
+
+
 
     sg_logger logger = {
           .func = my_log,  
@@ -110,6 +123,7 @@ void _sg_shutdown()
 void _sg_render(int w, int h)
 {
 
+    cameracontroller.Update(.001);
 
     const auto view_proj = camera.Projection() * camera.View();
 
@@ -120,11 +134,13 @@ void _sg_render(int w, int h)
     };
 
 
+
+    sg_reset_state_cache();
         {
             sg_pass pass = {
                             .action = {
                                    .colors = { {.load_action = SG_LOADACTION_CLEAR ,
-                                                .clear_value = {0.0f, .1f, .0f, 1.0f }} }
+                                                .clear_value = {0.0f, .0f, .0f, 1.0f }} }
                             },
                             .swapchain = {.width = w, .height = h }
             };

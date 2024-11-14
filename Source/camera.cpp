@@ -124,12 +124,19 @@ namespace batteries
         */
   void CameraController::Event(const juce::KeyPress& key)
   {
+     
+
+      if (key == 'w' || key == 'W')
+      {
+          move_forward = true;
+
+      }
     switch (e->type)
     {
     case SAPP_EVENTTYPE_KEY_DOWN:
       if (e->key_code == SAPP_KEYCODE_W || e->key_code == SAPP_KEYCODE_UP)
       {
-        move_forward = true;
+       
       }
       else if (e->key_code == SAPP_KEYCODE_S || e->key_code == SAPP_KEYCODE_DOWN)
       {
