@@ -85,6 +85,65 @@ void GridShape::GenerateGridVertices() {
         vertices.push_back(1.0f);       // a
     }
 
+    // Add x, y, z axes
+
+    // X-axis (red), from (0,0,0) to (10,0,0)
+    vertices.push_back(0.0f);     // x
+    vertices.push_back(0.0f);     // y
+    vertices.push_back(0.0f);     // z
+
+    vertices.push_back(1.0f);     // r (red)
+    vertices.push_back(0.0f);     // g
+    vertices.push_back(0.0f);     // b
+    vertices.push_back(1.0f);     // a
+
+    vertices.push_back(10.0f);    // x
+    vertices.push_back(0.0f);     // y
+    vertices.push_back(0.0f);     // z
+
+    vertices.push_back(1.0f);     // r (red)
+    vertices.push_back(0.0f);     // g
+    vertices.push_back(0.0f);     // b
+    vertices.push_back(1.0f);     // a
+
+    // Y-axis (green), from (0,0,0) to (0,10,0)
+    vertices.push_back(0.0f);     // x
+    vertices.push_back(0.0f);     // y
+    vertices.push_back(0.0f);     // z
+
+    vertices.push_back(0.0f);     // r
+    vertices.push_back(1.0f);     // g (green)
+    vertices.push_back(0.0f);     // b
+    vertices.push_back(1.0f);     // a
+
+    vertices.push_back(0.0f);     // x
+    vertices.push_back(10.0f);    // y
+    vertices.push_back(0.0f);     // z
+
+    vertices.push_back(0.0f);     // r
+    vertices.push_back(1.0f);     // g (green)
+    vertices.push_back(0.0f);     // b
+    vertices.push_back(1.0f);     // a
+
+    // Z-axis (blue), from (0,0,0) to (0,0,10)
+    vertices.push_back(0.0f);     // x
+    vertices.push_back(0.0f);     // y
+    vertices.push_back(0.0f);     // z
+
+    vertices.push_back(0.0f);     // r
+    vertices.push_back(0.0f);     // g
+    vertices.push_back(1.0f);     // b (blue)
+    vertices.push_back(1.0f);     // a
+
+    vertices.push_back(0.0f);     // x
+    vertices.push_back(0.0f);     // y
+    vertices.push_back(10.0f);    // z
+
+    vertices.push_back(0.0f);     // r
+    vertices.push_back(0.0f);     // g
+    vertices.push_back(1.0f);     // b (blue)
+    vertices.push_back(1.0f);     // a
+
     num_elements = static_cast<int>(vertices.size() / 7); // Each vertex has 7 floats
 
     // Create the vertex buffer
@@ -93,7 +152,7 @@ void GridShape::GenerateGridVertices() {
             .ptr = vertices.data(),
             .size = vertices.size() * sizeof(float)
         },
-        .label = "circle-vertices",
+        .label = "grid-vertices",
     };
 
     vertex_buffer = sg_make_buffer(&buffer_desc);

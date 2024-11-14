@@ -18,7 +18,6 @@ public:
 private:
     GridShape();
 
-
     GridShape(const GridShape&) = delete;
     GridShape& operator=(const GridShape&) = delete;
 
