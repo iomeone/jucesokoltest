@@ -149,30 +149,32 @@ void _sg_render(int w, int h)
 
             
 
-            {
-                sg_apply_pipeline(_quard_pipeline->pipeline);
+            //{
+            //    sg_apply_pipeline(_quard_pipeline->pipeline);
 
-                sg_apply_uniforms(SG_SHADERSTAGE_VS,0, SG_RANGE(vs_blinnphong_params));
+            //    sg_apply_uniforms(SG_SHADERSTAGE_VS,0, SG_RANGE(vs_blinnphong_params));
 
 
-                sg_apply_bindings(SimpleQuad::Instance().GetBindings());
-                sg_draw(0, SimpleQuad::Instance().GetNumElements(), 1);
-            }
+            //    sg_apply_bindings(SimpleQuad::Instance().GetBindings());
+            //    sg_draw(0, SimpleQuad::Instance().GetNumElements(), 1);
+            //}
 
 
 
             //{
             //    sg_apply_pipeline(_quard_pipeline_line_strip->pipeline_use_index);
+            //    sg_apply_uniforms(SG_SHADERSTAGE_VS, 0, SG_RANGE(vs_blinnphong_params));
             //    sg_apply_bindings(SimpleQuad::Instance().GetBindings_use_index());
             //    sg_draw(0, SimpleQuad::Instance().GetNumElements(), 1);
             //}
 
 
-            //{
-            //    sg_apply_pipeline(_quard_pipeline->pipeline_use_index);
-            //    sg_apply_bindings(SimpleLemniscate::Instance().GetBindings());
-            //    sg_draw(0, SimpleLemniscate::Instance().GetNumElements(), 1);
-            //}
+            {
+                sg_apply_pipeline(_quard_pipeline->pipeline_use_index);
+                sg_apply_uniforms(SG_SHADERSTAGE_VS, 0, SG_RANGE(vs_blinnphong_params));
+                sg_apply_bindings(SimpleLemniscate::Instance().GetBindings());
+                sg_draw(0, SimpleLemniscate::Instance().GetNumElements(), 1);
+            }
 
 
             //{

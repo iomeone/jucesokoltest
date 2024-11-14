@@ -64,7 +64,7 @@ SimplePipeline::SimplePipeline(sg_primitive_type primitive_type)
                             //[1] = {.name = "model", .type = SG_UNIFORMTYPE_MAT4},
                         },
                     },
-        }
+                }
             },
             .fs =
             {
@@ -98,6 +98,19 @@ SimplePipeline::SimplePipeline(sg_primitive_type primitive_type)
             .vs =
             {
                 .source = simple_quad_vs,
+
+                .uniform_blocks = {
+                    [0] = {
+
+                        .layout = SG_UNIFORMLAYOUT_NATIVE,
+                        .size = sizeof(vs_params_t),
+
+                        .uniforms = {
+                            [0] = {.name = "view_proj", .type = SG_UNIFORMTYPE_MAT4},
+                            //[1] = {.name = "model", .type = SG_UNIFORMTYPE_MAT4},
+                        },
+                    },
+                }
             },
             .fs =
             {
