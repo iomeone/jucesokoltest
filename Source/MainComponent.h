@@ -1,7 +1,7 @@
 #pragma once
 
 #include <JuceHeader.h>
-
+#include "Event.h"
 //==============================================================================
 /*
     This component lives inside our window, and this is where you should put all
@@ -67,15 +67,33 @@ public:
     bool keyStateChanged(bool isKeyDown) override;
 
 
+    void mouseMove(const juce::MouseEvent& event)override;
+
+    void mouseDown(const juce::MouseEvent& event)override;
+    void mouseUp(const juce::MouseEvent& event)override;
+
+    void mouseDrag(const juce::MouseEvent& event)override;
+
+    void mouseWheelMove(const juce::MouseEvent& event,
+        const juce::MouseWheelDetails& wheel) override;
+
+
+
 private:
     //==============================================================================
     // Your private member variables go here...
     FPS _fps;
 
+    std::array<TKeyEvent, 256> keyArray;
+
     std::map<std::string, std::pair<size_t, std::vector<unsigned char>>> fontMap;
 
 
     juce::TextButton button{ "Click Me" };
+
+
+    juce::Point<float> previousMousePosition;
+    bool isFirstMouseMove = true;
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (MainComponent)
 };

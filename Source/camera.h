@@ -4,6 +4,7 @@
 #include "glm/mat4x4.hpp"
 #include "glm/vec3.hpp"
 #include <JuceHeader.h>
+#include "Event.h"
 namespace batteries
 {
   class Camera
@@ -55,12 +56,13 @@ namespace batteries
     void SetMode(const Mode mode);
 
     void Update(float dt);
-    void Event(const juce::KeyPress& key);
+    void Event(TKeyEvent& key);
     void Debug(void);
 
   private:
     Camera *camera;
 
+    bool ismouseDown = false;
     // control options
     float movement_speed = 5.0f;
     float smoothing_factor = 1.0f;

@@ -3,6 +3,7 @@
 // glm
 #define GLM_ENABLE_EXPERIMENTAL
 #include "glm/gtx/transform.hpp"
+//#include "glm/glm.hpp"
 
 // imgui
 //#include "imgui/imgui.h"
@@ -122,73 +123,70 @@ namespace batteries
             camera.ProcessKeyboard(Camera_Movement::RIGHT, cameraSpeed);
         }
         */
-  void CameraController::Event(const juce::KeyPress& key)
+
+
+  void CameraController::Event(TKeyEvent& key)
   {
      
+      switch (key.type)
+      {
+      case e_key_down:
+          if (key.key_code == 'W' || key.key_code == juce::KeyPress::upKey)
+          {
+              move_forward = true;
+          }
+          else if (key.key_code == 'S' || key.key_code == juce::KeyPress::downKey)
+          {
+              move_backward = true;
+          }
+          else if (key.key_code == 'A' || key.key_code == juce::KeyPress::leftKey)
+          {
+              move_left = true;
+          }
+          else if (key.key_code == 'D' || key.key_code == juce::KeyPress::rightKey)
+          {
+              move_right = true;
+          }
+          break;
+      case e_key_up:
+          if (key.key_code == 'W' || key.key_code == juce::KeyPress::upKey)
+          {
+              move_forward = false;
+          }
+          else if (key.key_code == 'S' || key.key_code == juce::KeyPress::downKey)
+          {
+              move_backward = false;
+          }
+          else if (key.key_code == 'A' || key.key_code == juce::KeyPress::leftKey)
+          {
+              move_left = false;
+          }
+          else if (key.key_code == 'D' || key.key_code == juce::KeyPress::rightKey)
+          {
+              move_right = false;
+          }
+          break;
 
-      if (key == 'w' || key == 'W')
+     case e_mouse_down:
+      if (key.mouse_button == e_mouse_left)
       {
-          move_forward = true;
-
-      }
-    switch (e->type)
-    {
-    case SAPP_EVENTTYPE_KEY_DOWN:
-      if (e->key_code == SAPP_KEYCODE_W || e->key_code == SAPP_KEYCODE_UP)
-      {
-       
-      }
-      else if (e->key_code == SAPP_KEYCODE_S || e->key_code == SAPP_KEYCODE_DOWN)
-      {
-        move_backward = true;
-      }
-      else if (e->key_code == SAPP_KEYCODE_A || e->key_code == SAPP_KEYCODE_LEFT)
-      {
-        move_left = true;
-      }
-      else if (e->key_code == SAPP_KEYCODE_D || e->key_code == SAPP_KEYCODE_RIGHT)
-      {
-        move_right = true;
+          ismouseDown = true;
       }
       break;
-    case SAPP_EVENTTYPE_KEY_UP:
-      if (e->key_code == SAPP_KEYCODE_W || e->key_code == SAPP_KEYCODE_UP)
+    case e_mouse_up:
+      if (key.mouse_button == e_mouse_left)
       {
-        move_forward = false;
-      }
-      else if (e->key_code == SAPP_KEYCODE_S || e->key_code == SAPP_KEYCODE_DOWN)
-      {
-        move_backward = false;
-      }
-      else if (e->key_code == SAPP_KEYCODE_A || e->key_code == SAPP_KEYCODE_LEFT)
-      {
-        move_left = false;
-      }
-      else if (e->key_code == SAPP_KEYCODE_D || e->key_code == SAPP_KEYCODE_RIGHT)
-      {
-        move_right = false;
+          ismouseDown = false;
       }
       break;
-    case SAPP_EVENTTYPE_MOUSE_DOWN:
-      if (e->mouse_button == SAPP_MOUSEBUTTON_LEFT)
-      {
-        sapp_lock_mouse(true);
-      }
+    case e_mouse_scroll:
+      distance = glm::clamp(min_dist, distance + (key.scroll_y * 0.5f), max_dist);
       break;
-    case SAPP_EVENTTYPE_MOUSE_UP:
-      if (e->mouse_button == SAPP_MOUSEBUTTON_LEFT)
+    case e_mouse_move:
+      if (ismouseDown)
       {
-        sapp_lock_mouse(false);
-      }
-      break;
-    case SAPP_EVENTTYPE_MOUSE_SCROLL:
-      distance = glm::clamp(min_dist, distance + (e->scroll_y * 0.5f), max_dist);
-      break;
-    case SAPP_EVENTTYPE_MOUSE_MOVE:
-      if (sapp_mouse_locked())
-      {
-        yaw += e->mouse_dx * settings.dampening;
-        pitch -= e->mouse_dy * settings.dampening;
+        yaw += key.mouse_dx * settings.dampening;
+        pitch -= key.mouse_dy * settings.dampening;
         pitch = glm::clamp(min_pitch, pitch, max_pitch);
       }
       break;

@@ -123,7 +123,7 @@ void _sg_shutdown()
 void _sg_render(int w, int h)
 {
 
-    cameracontroller.Update(.001);
+
 
     const auto view_proj = camera.Projection() * camera.View();
 

@@ -91,7 +91,7 @@ void MainComponent::render()
     //juce::gl::glClear(juce::gl::GL_COLOR_BUFFER_BIT | juce::gl::GL_DEPTH_BUFFER_BIT | juce::gl::GL_STENCIL_BUFFER_BIT);
 
 
-
+    cameracontroller.Update(0.0166666675);
     _sg_render(getWidth(), getHeight());
 
     //openGLContext.extensions.glBindFramebuffer(juce::gl::GL_FRAMEBUFFER, 0);
@@ -132,33 +132,127 @@ void MainComponent::resized()
 
 bool MainComponent::keyPressed(const juce::KeyPress& key)
 {
-    
-    
+   
+    TKeyEvent e;
+    e.type = e_key_down;
+    e.key_code = key.getKeyCode();
+        
+    keyArray[e.key_code] = e;
 
-    
+    cameracontroller.Event(e);
     return false;
 
 }
 
 bool MainComponent::keyStateChanged(bool isKeyDown)
 {
+    if (!isKeyDown)
+    {
+        for (auto& keyEvent : keyArray)
+        {
 
-    if (isKeyDown)
-    {
-        if (juce::KeyPress::isKeyCurrentlyDown(  somekey ))
-        {
-            DBG("SPACE DOWN");
-        }
-    }
-    else
-    {
-       
-        if (!juce::KeyPress::isKeyCurrentlyDown( somekey))
-        {
-            DBG("SPACE UP"); // never called
+            if (keyEvent.type == e_key_down)
+            {
+                if (!juce::KeyPress::isKeyCurrentlyDown(keyEvent.key_code))
+                {
+                    // 按键被松开，处理相关事件
+                    keyEvent.type = e_key_up;
+                    cameracontroller.Event(keyEvent);
+                }
+            }
+
+
         }
     }
 
 
     return false;
+}
+
+void MainComponent::mouseMove(const juce::MouseEvent& event)
+{
+    TKeyEvent e;
+    e.type = e_mouse_move;
+
+    if (isFirstMouseMove)
+    {
+        previousMousePosition = event.position;
+        isFirstMouseMove = false;
+    }
+
+    e.mouse_dx = event.position.getX() - previousMousePosition.getX();
+    e.mouse_dy = event.position.getY() - previousMousePosition.getY();
+
+    previousMousePosition = event.position;
+
+    cameracontroller.Event(e);
+}
+
+void MainComponent::mouseDown(const juce::MouseEvent& event)
+{
+    TKeyEvent e;
+    e.type = e_mouse_down;
+
+
+    if (event.mods.isLeftButtonDown())
+        e.mouse_button = e_mouse_left;
+    else if (event.mods.isMiddleButtonDown())
+        e.mouse_button = e_mouse_middle;
+    else if (event.mods.isRightButtonDown())
+        e.mouse_button = e_mouse_right;
+
+
+    previousMousePosition = event.position;
+    isFirstMouseMove = false;
+
+    cameracontroller.Event(e);
+}
+
+void MainComponent::mouseUp(const juce::MouseEvent& event)
+{
+    TKeyEvent e;
+    e.type = e_mouse_up;
+
+    
+    if (event.mods.isLeftButtonDown())
+        e.mouse_button = e_mouse_left;
+    else if (event.mods.isMiddleButtonDown())
+        e.mouse_button = e_mouse_middle;
+    else if (event.mods.isRightButtonDown())
+        e.mouse_button = e_mouse_right;
+    else
+        e.mouse_button = e_mouse_none; 
+
+
+    isFirstMouseMove = true;
+
+    cameracontroller.Event(e);
+}
+
+void MainComponent::mouseDrag(const juce::MouseEvent& event)
+{
+    TKeyEvent e;
+    e.type = e_mouse_move;
+
+    if (isFirstMouseMove)
+    {
+        previousMousePosition = event.position;
+        isFirstMouseMove = false;
+    }
+
+    e.mouse_dx = event.position.getX() - previousMousePosition.getX();
+    e.mouse_dy = event.position.getY() - previousMousePosition.getY();
+
+    previousMousePosition = event.position;
+
+    cameracontroller.Event(e);
+}
+
+void MainComponent::mouseWheelMove(const juce::MouseEvent& event, const juce::MouseWheelDetails& wheel)
+{
+    TKeyEvent e;
+    e.type = e_mouse_scroll;
+    e.scroll_y = wheel.deltaY; 
+
+    cameracontroller.Event(e);
 }
