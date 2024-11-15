@@ -1,7 +1,7 @@
 #include "GridShape.h"
 #include <vector>
 #include <cmath>
-
+#include <glm/glm.hpp>
 GridShape& GridShape::Instance() {
     static GridShape instance;
     return instance;
@@ -146,6 +146,37 @@ void GridShape::GenerateGridVertices() {
 
     num_elements = static_cast<int>(vertices.size() / 7); // Each vertex has 7 floats
 
+
+
+
+
+
+
+
+    glm::mat4 identity_matrix = glm::mat4(1.0f);
+
+    // Step 2: Create a buffer for the identity matrix
+    sg_buffer_desc mat_buffer_desc = {
+        .data = {
+            .ptr = &identity_matrix,
+            .size = sizeof(glm::mat4),
+        },
+        .usage = SG_USAGE_IMMUTABLE, // The matrix won't change
+        .label = "identity-matrix-buffer",
+    };
+    sg_buffer matrix_buffer = sg_make_buffer(&mat_buffer_desc);
+
+
+
+
+
+
+
+
+
+
+
+
     // Create the vertex buffer
     sg_buffer_desc buffer_desc = {
         .data = {
@@ -159,5 +190,6 @@ void GridShape::GenerateGridVertices() {
 
     bindings = {
         .vertex_buffers[0] = vertex_buffer,
+        .vertex_buffers[1] = matrix_buffer,
     };
 }

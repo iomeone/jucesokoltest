@@ -177,7 +177,7 @@ void _sg_render(int w, int h)
             //    sg_draw(0, SimpleQuad::Instance().GetNumElements(), 1);
             //}
 
-            if (0)
+            if (1)
             {
                 sg_apply_pipeline(_quard_pipeline->pipeline_use_index);
                 sg_apply_uniforms(SG_SHADERSTAGE_VS, 0, SG_RANGE(vs_blinnphong_params));
@@ -185,7 +185,7 @@ void _sg_render(int w, int h)
                 sg_draw(0, SimpleLemniscate::Instance().GetNumElements(), 1);
             }
 
-            if (0)
+            if (1)
             {
                 sg_apply_pipeline(_quard_pipeline_line->pipeline);
                 sg_apply_uniforms(SG_SHADERSTAGE_VS, 0, SG_RANGE(vs_blinnphong_params));
@@ -200,7 +200,7 @@ void _sg_render(int w, int h)
             //    sg_draw(0, SimpleLemniscate::Instance().GetNumElements(), 1);
             //}
 
-            if(0)
+            if(1)
             {
                 sg_apply_pipeline(_quard_pipeline_line_strip->pipeline);
                 sg_apply_uniforms(SG_SHADERSTAGE_VS, 0, SG_RANGE(vs_blinnphong_params));
@@ -216,7 +216,7 @@ void _sg_render(int w, int h)
             //    sg_draw(0, RoseCurve::Instance().GetNumElements(), 1);
             //}
 
-            if(0)
+            if(1)
             {
                 sg_apply_pipeline(_quard_pipeline_line_strip->pipeline);
                 sg_apply_uniforms(SG_SHADERSTAGE_VS, 0, SG_RANGE(vs_blinnphong_params));

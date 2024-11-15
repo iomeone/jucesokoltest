@@ -1,7 +1,7 @@
 #include "simple_lemniscate.h"
 #include <vector>
 #include <cmath>
-
+#include <glm/glm.hpp>
 #define _USE_MATH_DEFINES
 #include <math.h>
 
@@ -77,6 +77,26 @@ SimpleLemniscate::SimpleLemniscate() {
 
     num_elements = static_cast<int>(indices.size());
 
+
+
+
+    glm::mat4 identity_matrix = glm::mat4(1.0f);
+
+    // Step 2: Create a buffer for the identity matrix
+    sg_buffer_desc mat_buffer_desc = {
+        .data = {
+            .ptr = &identity_matrix,
+            .size = sizeof(glm::mat4),
+        },
+        .usage = SG_USAGE_IMMUTABLE, // The matrix won't change
+        .label = "identity-matrix-buffer",
+    };
+    sg_buffer matrix_buffer = sg_make_buffer(&mat_buffer_desc);
+
+
+
+
+
     vertex_buffer = sg_make_buffer({
         .type = SG_BUFFERTYPE_VERTEXBUFFER,
         .data = {
@@ -97,6 +117,7 @@ SimpleLemniscate::SimpleLemniscate() {
 
     bindings = (sg_bindings){
         .vertex_buffers[0] = vertex_buffer,
+        .vertex_buffers[1] = matrix_buffer,
         .index_buffer = index_buffer,
     };
 }
