@@ -2,6 +2,9 @@
 #include <vector>
 #include <cmath>
 #include <glm/glm.hpp>
+#include <glm/gtc/matrix_transform.hpp>
+
+
 #define PI 3.14159265358979323846
 
 CircleShape& CircleShape::Instance() {
@@ -48,21 +51,25 @@ CircleShape::CircleShape() {
 
 
 
+    transform_matrices.push_back(glm::mat4(1.0f));
+    instance_count = 1;
 
-
-
-    glm::mat4 identity_matrix = glm::mat4(1.0f);
-
-    // Step 2: Create a buffer for the identity matrix
-    sg_buffer_desc mat_buffer_desc = {
-        .data = {
-            .ptr = &identity_matrix,
-            .size = sizeof(glm::mat4),
-        },
-        .usage = SG_USAGE_IMMUTABLE, // The matrix won't change
-        .label = "identity-matrix-buffer",
+    // Create the instance buffer with dynamic usage
+    sg_buffer_desc instance_buffer_desc = {
+        .size = sizeof(glm::mat4),
+        .usage = SG_USAGE_DYNAMIC, // The matrix can change
+        .label = "circle-instance-buffer",
     };
-    sg_buffer matrix_buffer = sg_make_buffer(&mat_buffer_desc);
+    instance_buffer = sg_make_buffer(&instance_buffer_desc);
+
+    // Update the instance buffer with the initial transform
+
+    sg_update_buffer(instance_buffer, (sg_range) {
+        .ptr = transform_matrices.data(),
+            .size = sizeof(glm::mat4)
+    });
+
+
 
 
 
@@ -79,11 +86,60 @@ CircleShape::CircleShape() {
 
     vertex_buffer = sg_make_buffer(&buffer_desc);
 
+    // Set up the bindings
     bindings = {
         .vertex_buffers[0] = vertex_buffer,
-        .vertex_buffers[1] = matrix_buffer,
+        .vertex_buffers[1] = instance_buffer,
     };
 }
+
+
+void CircleShape::SetTranslation(const glm::vec3& translation) {
+    // Update the transformation matrix
+    transform_matrices[0] = glm::translate(glm::mat4(1.0f), translation);
+
+    // Update the instance buffer with the new matrix
+    sg_update_buffer(instance_buffer, (sg_range) {
+        .ptr = transform_matrices.data(),
+            .size = sizeof(glm::mat4)
+    });
+}
+
+
+
+
+void CircleShape::SetTranslations(const std::vector<glm::vec3>& translations) {
+    instance_count = static_cast<int>(translations.size());
+    transform_matrices.resize(instance_count);
+
+    for (size_t i = 0; i < translations.size(); ++i) {
+        transform_matrices[i] = glm::translate(glm::mat4(1.0f), translations[i]);
+    }
+
+    // Resize the instance buffer if necessary
+    size_t buffer_size = sizeof(glm::mat4) * instance_count;
+
+    // Recreate the instance buffer
+    sg_buffer_desc instance_buffer_desc = {
+        .size = buffer_size,
+        .usage = SG_USAGE_DYNAMIC,
+        .label = "circle-instance-buffer",
+    };
+    sg_destroy_buffer(instance_buffer);
+    instance_buffer = sg_make_buffer(&instance_buffer_desc);
+
+    // Update the instance buffer with the transforms
+    sg_update_buffer(instance_buffer, (sg_range) {
+        .ptr = transform_matrices.data(),
+            .size = buffer_size
+    });
+
+
+    // Update bindings
+    bindings.vertex_buffers[1] = instance_buffer;
+}
+
+
 
 void CircleShape::release() {
     sg_destroy_buffer(vertex_buffer);

@@ -160,7 +160,7 @@ void _sg_render(int w, int h)
             sg_begin_pass(pass);
 
             
-
+            if(0)
             {
                 sg_apply_pipeline(_quard_pipeline->pipeline);
                 sg_apply_uniforms(SG_SHADERSTAGE_VS,0, SG_RANGE(vs_blinnphong_params));
@@ -177,7 +177,7 @@ void _sg_render(int w, int h)
             //    sg_draw(0, SimpleQuad::Instance().GetNumElements(), 1);
             //}
 
-            if (1)
+            if (0)
             {
                 sg_apply_pipeline(_quard_pipeline->pipeline_use_index);
                 sg_apply_uniforms(SG_SHADERSTAGE_VS, 0, SG_RANGE(vs_blinnphong_params));
@@ -200,7 +200,7 @@ void _sg_render(int w, int h)
             //    sg_draw(0, SimpleLemniscate::Instance().GetNumElements(), 1);
             //}
 
-            if(1)
+            if(0)
             {
                 sg_apply_pipeline(_quard_pipeline_line_strip->pipeline);
                 sg_apply_uniforms(SG_SHADERSTAGE_VS, 0, SG_RANGE(vs_blinnphong_params));
@@ -220,8 +220,18 @@ void _sg_render(int w, int h)
             {
                 sg_apply_pipeline(_quard_pipeline_line_strip->pipeline);
                 sg_apply_uniforms(SG_SHADERSTAGE_VS, 0, SG_RANGE(vs_blinnphong_params));
+                {
+
+                    std::vector<glm::vec3> translations = {
+                        glm::vec3(-5.0f, 0.0f, 0.0f), // Translation: x = -5, y = 0, z = 0
+                        glm::vec3(5.0f, 0.0f, 0.0f), // Translation: x =  5, y = 0, z = 0
+                        glm::vec3(5.0f, 5.0f, 0.0f)  // Translation: x =  5, y = 5, z = 0
+                    };
+                    CircleShape::Instance().SetTranslations(translations);
+                }
                 sg_apply_bindings(CircleShape::Instance().GetBindings());
-                sg_draw(0, CircleShape::Instance().GetNumElements(), 1);
+
+                sg_draw(0, CircleShape::Instance().GetNumElements(), CircleShape::Instance().GetNumInstances());
             }
    
 
