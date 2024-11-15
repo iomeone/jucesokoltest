@@ -1,5 +1,7 @@
 #include "quad.h"
 #include <glm/glm.hpp>
+#include <glm/gtc/matrix_transform.hpp>
+
 
 SimpleQuad& SimpleQuad::Instance() {
     static SimpleQuad instance;
@@ -22,13 +24,21 @@ SimpleQuad::SimpleQuad() {
 
 
     // Step 1: Create the identity matrix
-    glm::mat4 identity_matrix = glm::mat4(1.0f);
+    //glm::mat4 identity_matrix = glm::mat4(1.0f);
+
+
+    glm::mat4 transforms[3] = {
+    glm::translate(glm::mat4(1.0f), glm::vec3(-8.f, 0.0f, 0.0f)), // Quad at x = -0.5
+    glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, 0.0f, 0.0f)), // Quad at x = 0.0
+    glm::translate(glm::mat4(1.0f), glm::vec3(8.f, 0.0f, 0.0f))  // Quad at x = 0.5
+    };
+
 
     // Step 2: Create a buffer for the identity matrix
     sg_buffer_desc mat_buffer_desc = {
         .data = {
-            .ptr = &identity_matrix,
-            .size = sizeof(glm::mat4),
+            .ptr = &transforms,
+            .size = sizeof(transforms),
         },
         .usage = SG_USAGE_IMMUTABLE, // The matrix won't change
         .label = "identity-matrix-buffer",
