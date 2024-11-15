@@ -17,7 +17,7 @@ public:
 
 
     void SetTranslation(const glm::vec3& translation);
-    void SetTranslations(const std::vector<glm::vec3>& translations);
+    void CircleShape::SetTranslations(const std::vector<glm::vec3>& translations, const std::vector<glm::vec3>& scales);
 
 
     void release();

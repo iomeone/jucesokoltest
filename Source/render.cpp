@@ -227,7 +227,14 @@ void _sg_render(int w, int h)
                         glm::vec3(5.0f, 0.0f, 0.0f), // Translation: x =  5, y = 0, z = 0
                         glm::vec3(5.0f, 5.0f, 0.0f)  // Translation: x =  5, y = 5, z = 0
                     };
-                    CircleShape::Instance().SetTranslations(translations);
+
+                    std::vector<glm::vec3> scales = {
+                        glm::vec3(1.0f, 1.0f, 1.0f), // Scale: no scaling
+                        glm::vec3(2.0f, 2.0f, 1.0f), // Scale: 2x in x and y
+                        glm::vec3(0.5f, 0.5f, 1.0f)  // Scale: 0.5x in x and y                    
+                    };
+
+                    CircleShape::Instance().SetTranslations(translations, scales);
                 }
                 sg_apply_bindings(CircleShape::Instance().GetBindings());
 

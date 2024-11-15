@@ -108,12 +108,18 @@ void CircleShape::SetTranslation(const glm::vec3& translation) {
 
 
 
-void CircleShape::SetTranslations(const std::vector<glm::vec3>& translations) {
+void CircleShape::SetTranslations(const std::vector<glm::vec3>& translations, const std::vector<glm::vec3>& scales) {
+    // Ensure we have the same number of translations and scales
+    assert(translations.size() == scales.size() && "Translations and scales must have the same size!");
+
     instance_count = static_cast<int>(translations.size());
     transform_matrices.resize(instance_count);
 
     for (size_t i = 0; i < translations.size(); ++i) {
-        transform_matrices[i] = glm::translate(glm::mat4(1.0f), translations[i]);
+        // Combine translation and scaling
+        glm::mat4 scale_matrix = glm::scale(glm::mat4(1.0f), scales[i]);
+        glm::mat4 translation_matrix = glm::translate(glm::mat4(1.0f), translations[i]);
+        transform_matrices[i] = translation_matrix * scale_matrix;
     }
 
     // Resize the instance buffer if necessary
@@ -134,10 +140,10 @@ void CircleShape::SetTranslations(const std::vector<glm::vec3>& translations) {
             .size = buffer_size
     });
 
-
     // Update bindings
     bindings.vertex_buffers[1] = instance_buffer;
 }
+
 
 
 
