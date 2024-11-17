@@ -17,9 +17,10 @@
 #include "render.h"
 
 #include "camera.h"
+#include "tiny-gizmo.hpp"
 extern batteries::Camera camera;
 extern batteries::CameraController cameracontroller;
-extern linalg::aliases::float2 lastCursor;
+extern minalg::float2 lastCursor;
 
 //==============================================================================
 MainComponent::MainComponent()

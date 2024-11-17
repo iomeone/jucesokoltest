@@ -12,7 +12,10 @@ public:
     static SimpleQuad& Instance();
 
  
-    const sg_bindings& GetBindings() const { return bindings; }
+    const sg_bindings& GetBindings() const
+    {
+        return bindings;
+    }
 
     const sg_bindings& GetBindings_use_index() const { return bindings_use_index; }
 

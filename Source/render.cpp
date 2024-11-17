@@ -46,9 +46,9 @@
 #endif // JUCE_WINDOWS
 
 
-linalg::aliases::float2 lastCursor;
+minalg::float2 lastCursor;
 
-size_t g_w, g_h;
+float g_w, g_h;
 
 
 
@@ -120,7 +120,7 @@ void _sg_initialize(int w, int h, const std::map<std::string, std::pair<size_t, 
 
 
 
-    gizmo_transform.position = { 0.0f, 0.0f, 0.0f };
+    gizmo_transform.position = { 1.0f, 1.0f, 0.0f };
     gizmo_transform.orientation = { 0.0f, 0.0f, 0.0f, 1.0f };
     gizmo_transform.scale = { 1.0f, 1.0f, 1.0f };
 
@@ -138,12 +138,12 @@ void _sg_initialize(int w, int h, const std::map<std::string, std::pair<size_t, 
 
             // 设置 Uniform
             gizmo_vs_params_t vs_params;
-            vs_params.view_proj = camera.Projection() * camera.View(); // 使用您的 Camera 类
+            vs_params.view_proj = camera.Projection(g_w, g_h) * camera.View(); // 使用您的 Camera 类
 
             sg_apply_uniforms(SG_SHADERSTAGE_VS, 0, SG_RANGE(vs_params));
 
             // 应用绑定
-            sg_apply_bindings(&(gizmo_bindings->bindings));
+            sg_apply_bindings(gizmo_bindings->bindings);
 
             // 绘制
             sg_draw(0, gizmo_bindings->GetNumElements(), 1);
@@ -219,6 +219,32 @@ void _sg_shutdown()
 }
 
 
+struct ray { linalg::aliases::float3 origin; linalg::aliases::float3 direction; };
+
+struct rect
+{
+    float x0, y0, x1, y1;
+    int width() const { return x1 - x0; }
+    int height() const { return y1 - y0; }
+    linalg::aliases::int2 dims() const { return{ width(), height() }; }
+    float aspect_ratio() const { return (float)width() / height(); }
+};
+
+
+
+
+ray get_ray_from_pixel(const linalg::aliases::float2& pixel, const rect& viewport, const batteries::Camera& camera, const batteries::CameraController& cameracontroller)
+{
+    const float x = 2 * (pixel.x - viewport.x0) / viewport.width() - 1, y = 1 - 2 * (pixel.y - viewport.y0) / viewport.height();
+
+
+    const linalg::aliases::float4x4 inv_view_proj = linalg::inverse(cameracontroller.get_viewproj_matrix( g_w / g_h));
+    const linalg::aliases::float4 p0 = mul(inv_view_proj, linalg::aliases::float4(x, y, -1, 1)), p1 = mul(inv_view_proj, linalg::aliases::float4(x, y, +1, 1));
+    return{ {camera.position.x, camera.position.y, camera.position.z}, p1.xyz() * p0.w - p0.xyz() * p1.w};
+}
+
+
+
 
 
 void _sg_render(int w, int h)
@@ -227,14 +253,13 @@ void _sg_render(int w, int h)
     g_w = w;
     g_h = h;
 
-    const auto view_proj = camera.Projection() * camera.View();
+    const auto view_proj = camera.Projection(g_w, g_h) * camera.View();
 
 
     const vs_params_t vs_blinnphong_params = {
         .view_proj = view_proj,
 
     };
-
 
 
     {
@@ -252,41 +277,30 @@ void _sg_render(int w, int h)
         glm::mat4 view_matrix = camera.View();
 
 
-        auto orientation = cameracontroller.get_orientation();
+        auto cameraOrientation = cameracontroller.get_orientation();
 
        
 
-        gizmo_state.cam.orientation = tinygizmo::v4f{ orientation.x, orientation.y, orientation.z, orientation.w };
+        gizmo_state.cam.orientation = minalg::float4(cameraOrientation.x, cameraOrientation.y, cameraOrientation.z, cameraOrientation.w);
 
 
-        //const auto rayDir = get_ray_from_pixel({ lastCursor.x, lastCursor.y }, { 0, 0, windowSize.x, windowSize.y }, cam).direction;
-        
+        gizmo_state.ray_origin = { camera.position.x, camera.position.y, camera.position.z };
+
+
+        const auto rayDir = get_ray_from_pixel({ lastCursor.x, lastCursor.y }, { 0.f, 0.f, g_w, g_h }, camera, cameracontroller).direction;
+
+        gizmo_state.ray_direction = minalg::float3(rayDir.x, rayDir.y, rayDir.z);
+
+  
         // 3. 鼠标事件
         // 实现获取鼠标位置和鼠标按键状态的函数
         //gizmo_state.mouse_left = is_mouse_button_down(); // 您需要实现这个函数
         //gizmo_state.mouse_pos = get_mouse_position();    // 您需要实现这个函数，返回 glm::vec2 类型
+
+
+
+        gizmo_ctx.update(gizmo_state);
  
-
-
-        //glm::vec4 ray_clip = { mouse_x_ndc, mouse_y_ndc, -1.0f, 1.0f };
-
-        //// 从裁剪坐标变换到眼坐标
-        //glm::mat4 inv_proj = glm::inverse(camera.Projection());
-        //glm::vec4 ray_eye = inv_proj * ray_clip;
-        //ray_eye = { ray_eye.x, ray_eye.y, -1.0f, 0.0f };
-
-        //// 从眼坐标变换到世界坐标
-        //glm::mat4 inv_view = glm::inverse(camera.View());
-        //glm::vec4 ray_world_homogeneous = inv_view * ray_eye;
-        //glm::vec3 ray_world = glm::normalize(glm::vec3(ray_world_homogeneous));
-
-        //gizmo_state.ray_origin = { camera.position.x, camera.position.y, camera.position.z };
-        //gizmo_state.ray_direction = tinygizmo::v3f{ rayDir.x, rayDir.y, rayDir.z };
-
-        //// 调用 gizmo_ctx.update(gizmo_state);
-        //gizmo_ctx.update(gizmo_state);
-        /*
-        */
 
 
 
@@ -295,6 +309,11 @@ void _sg_render(int w, int h)
 
 
     sg_reset_state_cache();
+
+
+
+
+
         {
             sg_pass pass = {
                             .action = {

@@ -1,6 +1,7 @@
 #pragma once
 
 // glm
+#include "glm/glm.hpp"
 #include "glm/mat4x4.hpp"
 #include "glm/vec3.hpp"
 #include <JuceHeader.h>
@@ -14,7 +15,13 @@ namespace batteries
     Camera();
 
     glm::mat4 View() const;
-    glm::mat4 Projection() const;
+    glm::mat4 Projection(float w, float h) const;
+
+
+
+
+
+
 
   public:
     glm::vec3 position;
@@ -61,9 +68,41 @@ namespace batteries
     void Debug(void);
 
 
+
+
     linalg::aliases::float4 get_orientation() const
     {
-        return linalg::qmul(linalg::rotation_quat(linalg::aliases::float3(0, 1, 0), yaw), linalg::rotation_quat(linalg::aliases::float3(1, 0, 0), pitch));
+        return qmul(rotation_quat(linalg::aliases::float3(0, 1, 0), 
+            glm::radians(yaw)), 
+            rotation_quat(linalg::aliases::float3(1, 0, 0), 
+                glm::radians(pitch)));
+    }
+
+
+
+
+    linalg::aliases::float4x4 get_projection_matrix(const float aspectRatio) const
+
+    {
+        return linalg::perspective_matrix(glm::radians(camera->fov), aspectRatio, camera->nearz, camera->farz);
+    }
+
+
+    linalg::aliases::float4x4 get_view_matrix() const
+    {
+        linalg::aliases::float3 position = { -camera->position.x, -camera->position.y, -camera->position.z };
+
+        return linalg::mul(linalg::rotation_matrix(linalg::qconj(get_orientation())),
+            linalg::translation_matrix(-position));
+    }
+
+
+
+
+
+    linalg::aliases::float4x4 get_viewproj_matrix(const float aspectRatio) const
+    {
+        return mul(get_projection_matrix(aspectRatio), get_view_matrix());
     }
 
   private:

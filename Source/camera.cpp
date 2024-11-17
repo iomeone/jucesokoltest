@@ -39,9 +39,9 @@ namespace batteries
     return glm::lookAt(position, center, up);
   }
 
-  glm::mat4 Camera::Projection() const
+  glm::mat4 Camera::Projection(float w, float h) const
   {
-    constexpr float aspect = 800.0f / 600.0f;
+    float aspect = w / h;
     return orthographic
                ? glm::ortho(orthoHeight, fov, nearz, farz)
                : glm::perspective(glm::radians(fov), aspect, nearz, farz);
