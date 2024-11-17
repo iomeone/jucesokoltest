@@ -4,7 +4,14 @@
               addUsingNamespaceToJuceHeader="0" jucerFormatVersion="1" cppLanguageStandard="20"
               headerPath="../../Source">
   <MAINGROUP id="AEHFTP" name="test">
+    <GROUP id="{9C7380B7-8B53-4ACE-B046-9834E168479C}" name="common">
+      <FILE id="Si4uhM" name="common.h" compile="0" resource="0" file="Source/common.h"/>
+    </GROUP>
     <GROUP id="{2E805012-9BA7-EF65-EB9E-5D10C0CD6611}" name="pipeline">
+      <FILE id="fsPyjy" name="gizmo_pipeline.cpp" compile="1" resource="0"
+            file="Source/gizmo_pipeline.cpp"/>
+      <FILE id="ooUkxX" name="gizmo_pipeline.h" compile="0" resource="0"
+            file="Source/gizmo_pipeline.h"/>
       <FILE id="qxiAuo" name="pos_color_pipeline.cpp" compile="1" resource="0"
             file="Source/pos_color_pipeline.cpp"/>
       <FILE id="BMKPVg" name="pos_color_pipeline.h" compile="0" resource="0"

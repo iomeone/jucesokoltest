@@ -2,15 +2,7 @@
 
 #include "sokol_gfx.h"
 
-
-#include "glm/glm.hpp"
-
-
-struct vs_params_t
-{
-    glm::mat4 view_proj;
-    //glm::mat4 model;
-};
+#include "common.h"
 
 
 struct SimplePipeline
