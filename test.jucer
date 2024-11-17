@@ -8,6 +8,10 @@
       <FILE id="Si4uhM" name="common.h" compile="0" resource="0" file="Source/common.h"/>
     </GROUP>
     <GROUP id="{2E805012-9BA7-EF65-EB9E-5D10C0CD6611}" name="pipeline">
+      <FILE id="BYJKgN" name="gizmo_bindings.cpp" compile="1" resource="0"
+            file="Source/gizmo_bindings.cpp"/>
+      <FILE id="Xg9x0u" name="gizmo_bindings.h" compile="0" resource="0"
+            file="Source/gizmo_bindings.h"/>
       <FILE id="fsPyjy" name="gizmo_pipeline.cpp" compile="1" resource="0"
             file="Source/gizmo_pipeline.cpp"/>
       <FILE id="ooUkxX" name="gizmo_pipeline.h" compile="0" resource="0"

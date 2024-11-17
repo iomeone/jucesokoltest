@@ -10,7 +10,7 @@
 class GizmoPipeline {
 public:
     GizmoPipeline();
-    ~GizmoPipeline();
+    void release();
 
     sg_pipeline pipeline;
     sg_shader shader;

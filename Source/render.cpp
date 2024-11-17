@@ -17,6 +17,17 @@
 
 #include "pos_color_pipeline.h"
 
+
+
+
+
+#include "gizmo_pipeline.h"
+#include "gizmo_bindings.h"
+
+
+
+
+
 #include "simple_lemniscate.h"
 
 #include "RoseCurve.h"
@@ -47,6 +58,9 @@ SimplePipeline* _quard_pipeline_line_strip = nullptr;
 
 
 
+
+GizmoPipeline* gizmo_pipeline = nullptr;
+GizmoBindings* gizmo_bindings = nullptr;
 
 
 
@@ -109,12 +123,24 @@ void _sg_initialize(int w, int h, const std::map<std::string, std::pair<size_t, 
     assert(sg_isvalid());  // 确保 Sokol 已经初始化
 
 
-    _quard_pipeline = new SimplePipeline();
 
-    _quard_pipeline_line_strip = new SimplePipeline(sg_primitive_type::SG_PRIMITIVETYPE_LINE_STRIP);
+    {
+        _quard_pipeline = new SimplePipeline();
+
+        _quard_pipeline_line_strip = new SimplePipeline(sg_primitive_type::SG_PRIMITIVETYPE_LINE_STRIP);
+
+        _quard_pipeline_line = new SimplePipeline(sg_primitive_type::SG_PRIMITIVETYPE_LINES);
+    }
 
 
-    _quard_pipeline_line = new SimplePipeline(sg_primitive_type::SG_PRIMITIVETYPE_LINES);
+    {
+        gizmo_pipeline = new GizmoPipeline();
+        gizmo_bindings = new GizmoBindings();
+    }
+
+
+
+
 
 }
 
@@ -125,8 +151,20 @@ void _sg_shutdown()
  
     SimpleLemniscate::Instance().release();
     GridShape::Instance().release();
+
+
+    gizmo_bindings->release();
+    gizmo_pipeline->release();
+
+
+
     delete _quard_pipeline;
     delete _quard_pipeline_line_strip;
+
+
+
+    delete gizmo_bindings;
+    delete gizmo_pipeline;
 }
 
 

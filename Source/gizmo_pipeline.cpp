@@ -69,7 +69,7 @@ GizmoPipeline::GizmoPipeline() {
     });
 }
 
-GizmoPipeline::~GizmoPipeline() {
+void GizmoPipeline::release() {
     sg_destroy_pipeline(pipeline);
     sg_destroy_shader(shader);
 }
