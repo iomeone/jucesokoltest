@@ -3,7 +3,7 @@
 #include <vector>
 
 #include "common.h"
-
+#include "tiny-gizmo.hpp"
 
 struct geometry_vertex {
     glm::vec3 position;
@@ -18,10 +18,14 @@ public:
     GizmoBindings();
     void release();
 
-    void Update(const std::vector<geometry_vertex>& vertices, const std::vector<uint32_t>& indices);
+    void GizmoBindings::Update(const std::vector<tinygizmo::geometry_vertex>& vertices, const std::vector<minalg::uint3>& triangles);
+
+    size_t GetNumElements() const { return index_count; }
 
     sg_bindings bindings;
 private:
     sg_buffer vertex_buffer;
     sg_buffer index_buffer;
+
+    size_t index_count;
 };

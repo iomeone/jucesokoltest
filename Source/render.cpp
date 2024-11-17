@@ -71,6 +71,12 @@ batteries::CameraController cameracontroller;
 
 
 
+tinygizmo::gizmo_context gizmo_ctx;
+tinygizmo::gizmo_application_state gizmo_state;
+
+
+
+
 
 
 
@@ -104,6 +110,33 @@ void _sg_initialize(int w, int h, const std::map<std::string, std::pair<size_t, 
     //    .yaw = 90.0f,
     //    .distance = 10.0f,
     //    });
+
+
+    gizmo_ctx.render = [&](const tinygizmo::geometry_mesh& mesh) {
+
+        if (mesh.vertices.size() > 0 && mesh.triangles.size() > 0)
+        {
+            // 更新绑定
+            gizmo_bindings->Update(mesh.vertices, mesh.triangles);
+
+            // 应用管线
+            sg_apply_pipeline(gizmo_pipeline->pipeline);
+
+            // 设置 Uniform
+            gizmo_vs_params_t vs_params;
+            vs_params.view_proj = camera.Projection() * camera.View(); // 使用您的 Camera 类
+
+            sg_apply_uniforms(SG_SHADERSTAGE_VS, 0, SG_RANGE(vs_params));
+
+            // 应用绑定
+            sg_apply_bindings(&(gizmo_bindings->bindings));
+
+            // 绘制
+            sg_draw(0, gizmo_bindings->GetNumElements(), 1);
+        }
+
+        };
+
 
 
 
@@ -277,6 +310,15 @@ void _sg_render(int w, int h)
                 sg_apply_bindings(CircleShape::Instance().GetBindings());
 
                 sg_draw(0, CircleShape::Instance().GetNumElements(), CircleShape::Instance().GetNumInstances());
+            }
+
+
+            {
+
+                gizmo_ctx.update(gizmo_state);
+
+                gizmo_ctx.draw();
+
             }
    
 

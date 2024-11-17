@@ -3,7 +3,7 @@
 #define MAX_GIZMO_VERTICES 65536
 #define MAX_GIZMO_INDICES 65536
 
-GizmoBindings::GizmoBindings() {
+GizmoBindings::GizmoBindings() : index_count(0) {
     // 创建顶点缓冲区
     vertex_buffer = sg_make_buffer((sg_buffer_desc) {
         .usage = SG_USAGE_STREAM,
@@ -29,16 +29,32 @@ void GizmoBindings::release() {
     sg_destroy_buffer(index_buffer);
 }
 
-void GizmoBindings::Update(const std::vector<geometry_vertex>& vertices, const std::vector<uint32_t>& indices) {
+
+
+
+void GizmoBindings::Update(const std::vector<tinygizmo::geometry_vertex>& vertices, const std::vector<minalg::uint3>& triangles) {
     // 更新顶点缓冲区
     sg_update_buffer(vertex_buffer, (sg_range){
         .ptr = vertices.data(),
-        .size = sizeof(geometry_vertex) * vertices.size()
+            .size = sizeof(geometry_vertex) * vertices.size()
     });
+
+    //// 将 triangles 展开为平面的索引数组
+    //std::vector<uint32_t> indices;
+    //indices.reserve(triangles.size() * 3);
+    //for (const auto& tri : triangles) {
+    //    indices.push_back(tri.x);
+    //    indices.push_back(tri.y);
+    //    indices.push_back(tri.z);
+    //}
 
     // 更新索引缓冲区
     sg_update_buffer(index_buffer, (sg_range){
-        .ptr = indices.data(),
-        .size = sizeof(uint32_t) * indices.size()
+        .ptr = triangles.data(),
+            .size = sizeof(uint32_t) * triangles.size()
     });
+
+    // 保存索引数以便绘制时使用
+    index_count = triangles.size();
 }
+
