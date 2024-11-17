@@ -46,6 +46,10 @@
 #endif // JUCE_WINDOWS
 
 
+linalg::aliases::float2 lastCursor;
+
+size_t g_w, g_h;
+
 
 
 
@@ -74,6 +78,7 @@ batteries::CameraController cameracontroller;
 tinygizmo::gizmo_context gizmo_ctx;
 tinygizmo::gizmo_application_state gizmo_state;
 
+tinygizmo::rigid_transform gizmo_transform;
 
 
 
@@ -103,6 +108,8 @@ void my_log(const char* tag, uint32_t log_level, uint32_t log_item_id,
 void _sg_initialize(int w, int h, const std::map<std::string, std::pair<size_t, std::vector<unsigned char>>>& fontMap)
 {
 
+    g_w = w;
+    g_h = h;
     cameracontroller.SetCamera(&camera);
     //cameracontroller.Configure({
     //    .mode = (int)batteries::CameraController::Mode::Orbit,
@@ -110,6 +117,13 @@ void _sg_initialize(int w, int h, const std::map<std::string, std::pair<size_t, 
     //    .yaw = 90.0f,
     //    .distance = 10.0f,
     //    });
+
+
+
+    gizmo_transform.position = { 0.0f, 0.0f, 0.0f };
+    gizmo_transform.orientation = { 0.0f, 0.0f, 0.0f, 1.0f };
+    gizmo_transform.scale = { 1.0f, 1.0f, 1.0f };
+
 
 
     gizmo_ctx.render = [&](const tinygizmo::geometry_mesh& mesh) {
@@ -136,6 +150,10 @@ void _sg_initialize(int w, int h, const std::map<std::string, std::pair<size_t, 
         }
 
         };
+
+
+
+
 
 
 
@@ -206,7 +224,8 @@ void _sg_shutdown()
 void _sg_render(int w, int h)
 {
 
-
+    g_w = w;
+    g_h = h;
 
     const auto view_proj = camera.Projection() * camera.View();
 
@@ -216,6 +235,63 @@ void _sg_render(int w, int h)
 
     };
 
+
+
+    {
+        // 更新 gizmo_state
+ // 1. 确保视口大小正确
+        gizmo_state.viewport_size = { (float)w, (float)h };
+
+        // 2. 更新相机参数
+        gizmo_state.cam.yfov = glm::radians(camera.fov); // 确保 yfov 以弧度为单位
+        gizmo_state.cam.near_clip = camera.nearz;
+        gizmo_state.cam.far_clip = camera.farz;
+        gizmo_state.cam.position = { camera.position.x, camera.position.y, camera.position.z };
+
+        // 如果您的 Camera 类没有 orientation，可以通过视图矩阵计算
+        glm::mat4 view_matrix = camera.View();
+
+
+        auto orientation = cameracontroller.get_orientation();
+
+       
+
+        gizmo_state.cam.orientation = tinygizmo::v4f{ orientation.x, orientation.y, orientation.z, orientation.w };
+
+
+        //const auto rayDir = get_ray_from_pixel({ lastCursor.x, lastCursor.y }, { 0, 0, windowSize.x, windowSize.y }, cam).direction;
+        
+        // 3. 鼠标事件
+        // 实现获取鼠标位置和鼠标按键状态的函数
+        //gizmo_state.mouse_left = is_mouse_button_down(); // 您需要实现这个函数
+        //gizmo_state.mouse_pos = get_mouse_position();    // 您需要实现这个函数，返回 glm::vec2 类型
+ 
+
+
+        //glm::vec4 ray_clip = { mouse_x_ndc, mouse_y_ndc, -1.0f, 1.0f };
+
+        //// 从裁剪坐标变换到眼坐标
+        //glm::mat4 inv_proj = glm::inverse(camera.Projection());
+        //glm::vec4 ray_eye = inv_proj * ray_clip;
+        //ray_eye = { ray_eye.x, ray_eye.y, -1.0f, 0.0f };
+
+        //// 从眼坐标变换到世界坐标
+        //glm::mat4 inv_view = glm::inverse(camera.View());
+        //glm::vec4 ray_world_homogeneous = inv_view * ray_eye;
+        //glm::vec3 ray_world = glm::normalize(glm::vec3(ray_world_homogeneous));
+
+        //gizmo_state.ray_origin = { camera.position.x, camera.position.y, camera.position.z };
+        //gizmo_state.ray_direction = tinygizmo::v3f{ rayDir.x, rayDir.y, rayDir.z };
+
+        //// 调用 gizmo_ctx.update(gizmo_state);
+        //gizmo_ctx.update(gizmo_state);
+        /*
+        */
+
+
+
+
+    }
 
 
     sg_reset_state_cache();
@@ -316,6 +392,16 @@ void _sg_render(int w, int h)
             {
 
                 gizmo_ctx.update(gizmo_state);
+
+
+                if (tinygizmo::transform_gizmo("Gizmo", gizmo_ctx, gizmo_transform)) {
+                    // 当 Gizmo 被交互时，可以在这里更新您的对象变换
+                    // 例如，打印新的位置
+                    printf("Gizmo moved to position: %f, %f, %f\n",
+                        gizmo_transform.position.x,
+                        gizmo_transform.position.y,
+                        gizmo_transform.position.z);
+                }
 
                 gizmo_ctx.draw();
 

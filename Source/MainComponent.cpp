@@ -19,6 +19,7 @@
 #include "camera.h"
 extern batteries::Camera camera;
 extern batteries::CameraController cameracontroller;
+extern linalg::aliases::float2 lastCursor;
 
 //==============================================================================
 MainComponent::MainComponent()
@@ -202,6 +203,10 @@ void MainComponent::mouseDown(const juce::MouseEvent& event)
 
 
     previousMousePosition = event.position;
+
+    lastCursor.x = event.position.x;
+    lastCursor.y = event.position.y;
+
     isFirstMouseMove = false;
 
     cameracontroller.Event(e);

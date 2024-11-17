@@ -4,6 +4,7 @@
 #include "glm/mat4x4.hpp"
 #include "glm/vec3.hpp"
 #include <JuceHeader.h>
+#include "linalg.h"
 #include "Event.h"
 namespace batteries
 {
@@ -22,7 +23,7 @@ namespace batteries
     glm::vec3 right;
     glm::vec3 center;
 
-  private:
+  public:
     bool orthographic = false;
     float orthoHeight = 6.0f;
 
@@ -58,6 +59,12 @@ namespace batteries
     void Update(float dt);
     void Event(TKeyEvent& key);
     void Debug(void);
+
+
+    linalg::aliases::float4 get_orientation() const
+    {
+        return linalg::qmul(linalg::rotation_quat(linalg::aliases::float3(0, 1, 0), yaw), linalg::rotation_quat(linalg::aliases::float3(1, 0, 0), pitch));
+    }
 
   private:
     Camera *camera;
