@@ -160,7 +160,7 @@ void _sg_render(int w, int h)
             sg_begin_pass(pass);
 
             
-            if(0)
+            if(1)
             {
                 sg_apply_pipeline(_quard_pipeline->pipeline);
                 sg_apply_uniforms(SG_SHADERSTAGE_VS,0, SG_RANGE(vs_blinnphong_params));
