@@ -34,7 +34,7 @@ namespace batteries
     bool orthographic = false;
     float orthoHeight = 6.0f;
 
-    float fov = 60.0f;
+    float fov = 57.295779513;
     float nearz = 0.01f;
     float farz = 100.0f;
   };
@@ -69,7 +69,6 @@ namespace batteries
 
 
 
-
     linalg::aliases::float4 get_orientation() const
     {
         return qmul(rotation_quat(linalg::aliases::float3(0, 1, 0), 
@@ -90,7 +89,7 @@ namespace batteries
 
     linalg::aliases::float4x4 get_view_matrix() const
     {
-        linalg::aliases::float3 position = { -camera->position.x, -camera->position.y, -camera->position.z };
+        linalg::aliases::float3 position = { camera->position.x, camera->position.y, camera->position.z };
 
         return linalg::mul(linalg::rotation_matrix(linalg::qconj(get_orientation())),
             linalg::translation_matrix(-position));

@@ -34,7 +34,7 @@ MainComponent::MainComponent()
 
     // Make sure you set the size of the component after
     // you add any child components.
-    setSize (800, 600);
+    setSize (1280, 800);
 }
 
 MainComponent::~MainComponent()
@@ -186,6 +186,10 @@ void MainComponent::mouseMove(const juce::MouseEvent& event)
     e.mouse_dy = event.position.getY() - previousMousePosition.getY();
 
     previousMousePosition = event.position;
+
+
+    lastCursor.x = event.position.x;
+    lastCursor.y = event.position.y;
 
     //cameracontroller.Event(e);
 }
