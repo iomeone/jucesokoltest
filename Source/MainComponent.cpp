@@ -21,6 +21,7 @@
 extern batteries::Camera camera;
 extern batteries::CameraController cameracontroller;
 extern minalg::float2 lastCursor;
+extern bool b_left_mouse_down;
 
 //==============================================================================
 MainComponent::MainComponent()
@@ -186,17 +187,21 @@ void MainComponent::mouseMove(const juce::MouseEvent& event)
 
     previousMousePosition = event.position;
 
-    cameracontroller.Event(e);
+    //cameracontroller.Event(e);
 }
 
 void MainComponent::mouseDown(const juce::MouseEvent& event)
 {
+   
     TKeyEvent e;
     e.type = e_mouse_down;
 
 
     if (event.mods.isLeftButtonDown())
+    {
+        b_left_mouse_down = true;
         e.mouse_button = e_mouse_left;
+    }
     else if (event.mods.isMiddleButtonDown())
         e.mouse_button = e_mouse_middle;
     else if (event.mods.isRightButtonDown())
@@ -220,7 +225,10 @@ void MainComponent::mouseUp(const juce::MouseEvent& event)
 
     
     if (event.mods.isLeftButtonDown())
+    {
         e.mouse_button = e_mouse_left;
+        b_left_mouse_down = false;
+    }
     else if (event.mods.isMiddleButtonDown())
         e.mouse_button = e_mouse_middle;
     else if (event.mods.isRightButtonDown())
@@ -250,7 +258,7 @@ void MainComponent::mouseDrag(const juce::MouseEvent& event)
 
     previousMousePosition = event.position;
 
-    cameracontroller.Event(e);
+    //cameracontroller.Event(e);
 }
 
 void MainComponent::mouseWheelMove(const juce::MouseEvent& event, const juce::MouseWheelDetails& wheel)

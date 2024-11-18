@@ -470,7 +470,8 @@ namespace tinygizmo
     {
         translate,
         rotate,
-        scale
+        scale,
+        none,
     };
 
     struct gizmo_application_state

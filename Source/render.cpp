@@ -50,6 +50,9 @@ minalg::float2 lastCursor;
 
 float g_w, g_h;
 
+bool b_left_mouse_down = false;
+
+
 
 
 
@@ -273,7 +276,7 @@ void _sg_render(int w, int h)
         gizmo_state.cam.far_clip = camera.farz;
         gizmo_state.cam.position = { camera.position.x, camera.position.y, camera.position.z };
 
-        // 如果您的 Camera 类没有 orientation，可以通过视图矩阵计算
+
         glm::mat4 view_matrix = camera.View();
 
 
@@ -292,11 +295,27 @@ void _sg_render(int w, int h)
         gizmo_state.ray_direction = minalg::float3(rayDir.x, rayDir.y, rayDir.z);
 
   
-        // 3. 鼠标事件
-        // 实现获取鼠标位置和鼠标按键状态的函数
-        //gizmo_state.mouse_left = is_mouse_button_down(); // 您需要实现这个函数
-        //gizmo_state.mouse_pos = get_mouse_position();    // 您需要实现这个函数，返回 glm::vec2 类型
+ 
+        gizmo_state.mouse_left = b_left_mouse_down;
+ 
 
+        static auto itransform_mode = tinygizmo::transform_mode::none;
+
+        if (gizmo_ctx.get_mode() == tinygizmo::transform_mode::translate && itransform_mode != tinygizmo::transform_mode::translate)
+        {
+            itransform_mode = tinygizmo::transform_mode::translate;
+            printf("\n translate \n");
+        }
+        if (gizmo_ctx.get_mode() == tinygizmo::transform_mode::rotate && itransform_mode != tinygizmo::transform_mode::rotate)
+        {
+            itransform_mode = tinygizmo::transform_mode::rotate;
+            printf("\n rotate \n");
+        }
+        if (gizmo_ctx.get_mode() == tinygizmo::transform_mode::scale && itransform_mode != tinygizmo::transform_mode::scale)
+        {
+            itransform_mode = tinygizmo::transform_mode::scale;
+            printf("\n scale \n");
+        }
 
 
         gizmo_ctx.update(gizmo_state);
@@ -409,8 +428,6 @@ void _sg_render(int w, int h)
 
 
             {
-
-                gizmo_ctx.update(gizmo_state);
 
 
                 if (tinygizmo::transform_gizmo("Gizmo", gizmo_ctx, gizmo_transform)) {
