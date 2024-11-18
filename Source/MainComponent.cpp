@@ -191,7 +191,7 @@ void MainComponent::mouseMove(const juce::MouseEvent& event)
     lastCursor.x = event.position.x;
     lastCursor.y = event.position.y;
 
-    //cameracontroller.Event(e);
+    cameracontroller.Event(e);
 }
 
 void MainComponent::mouseDown(const juce::MouseEvent& event)
@@ -262,7 +262,7 @@ void MainComponent::mouseDrag(const juce::MouseEvent& event)
 
     previousMousePosition = event.position;
 
-    //cameracontroller.Event(e);
+    cameracontroller.Event(e);
 }
 
 void MainComponent::mouseWheelMove(const juce::MouseEvent& event, const juce::MouseWheelDetails& wheel)

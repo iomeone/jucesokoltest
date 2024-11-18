@@ -72,7 +72,7 @@ namespace batteries
     linalg::aliases::float4 get_orientation() const
     {
         return qmul(rotation_quat(linalg::aliases::float3(0, 1, 0), 
-            glm::radians(yaw)), 
+            glm::radians(0.f)), 
             rotation_quat(linalg::aliases::float3(1, 0, 0), 
                 glm::radians(pitch)));
     }

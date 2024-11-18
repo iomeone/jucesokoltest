@@ -30,7 +30,7 @@ namespace
 namespace batteries
 {
   Camera::Camera()
-      : position{0.0f, 10.0f, 20.0f}, front{0.0f, 0.0f, -1.0f}, up{0.0f, 1.0f, 0.0f}, right{1.0f, 0.0f, 0.0f}, center{0.0f, 0.0f, 0.0f}
+      : position{0.0f, 5.0f, 10.0f}, front{0.0f, 0.0f, -1.0f}, up{0.0f, 1.0f, 0.0f}, right{1.0f, 0.0f, 0.0f}, center{0.0f, 0.0f, 0.0f}
   {
   }
 
