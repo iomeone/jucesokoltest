@@ -77,7 +77,7 @@ GizmoBindings* gizmo_bindings = nullptr;
 //batteries::CameraController cameracontroller;
 
 
-camera_quaternion camera_quaternion;
+camera_quaternion _camera_quaternion;
 
 
 
@@ -126,11 +126,15 @@ void _sg_initialize(int w, int h, const std::map<std::string, std::pair<size_t, 
 
 
 
-    gizmo_transform.position = { 1.0f, 1.0f, 0.0f };
+    gizmo_transform.position = { 1.0f, 16.0f, 0.0f };
     gizmo_transform.orientation = { 0.0f, 0.0f, 0.0f, 1.0f };
     gizmo_transform.scale = { 1.0f, 1.0f, 1.0f };
 
-    camera_quaternion.perspective();
+
+    _camera_quaternion.position = glm::vec3(0.0, 16.0, 10.0);
+    _camera_quaternion.perspective();
+
+    _camera_quaternion.orient(0.2f, .2f);
 
     gizmo_ctx.render = [&](const tinygizmo::geometry_mesh& mesh) {
 
@@ -144,7 +148,7 @@ void _sg_initialize(int w, int h, const std::map<std::string, std::pair<size_t, 
 
             // 设置 Uniform
             gizmo_vs_params_t vs_params;
-            vs_params.view_proj = camera_quaternion.projectionViewMatrix();// camera.Projection(g_w, g_h)* camera.View(); // 使用您的 Camera 类
+            vs_params.view_proj = _camera_quaternion.projectionViewMatrix();// camera.Projection(g_w, g_h)* camera.View(); // 使用您的 Camera 类
 
             sg_apply_uniforms(SG_SHADERSTAGE_VS, 0, SG_RANGE(vs_params));
 
@@ -239,12 +243,12 @@ struct rect
 
 
 
-ray get_ray_from_pixel(const linalg::aliases::float2& pixel, const rect& viewport, class camera_quaternion& camera_quaternion)
+ray get_ray_from_pixel(const linalg::aliases::float2& pixel, const rect& viewport, class camera_quaternion& _camera_quaternion)
 {
     const float x = 2 * (pixel.x - viewport.x0) / viewport.width() - 1, y = 1 - 2 * (pixel.y - viewport.y0) / viewport.height();
 
 
-    glm::mat4 pv = camera_quaternion.projectionMatrix() * camera_quaternion.viewMatrix();
+    glm::mat4 pv = _camera_quaternion.projectionMatrix() * _camera_quaternion.viewMatrix();
 
     linalg::aliases::float4x4 pv_linalg(
         linalg::aliases::float4(pv[0][0], pv[0][1], pv[0][2], pv[0][3]),
@@ -256,7 +260,7 @@ ray get_ray_from_pixel(const linalg::aliases::float2& pixel, const rect& viewpor
 
     const linalg::aliases::float4x4 inv_view_proj = linalg::inverse(pv_linalg);
     const linalg::aliases::float4 p0 = mul(inv_view_proj, linalg::aliases::float4(x, y, -1, 1)), p1 = mul(inv_view_proj, linalg::aliases::float4(x, y, +1, 1));
-    return{ {camera_quaternion.position.x, camera_quaternion.position.y, camera_quaternion.position.z}, p1.xyz() * p0.w - p0.xyz() * p1.w};
+    return{ {_camera_quaternion.position.x, _camera_quaternion.position.y, _camera_quaternion.position.z}, p1.xyz() * p0.w - p0.xyz() * p1.w};
 }
 
 
@@ -270,8 +274,8 @@ void _sg_render(int w, int h)
     g_h = h;
 
 
- /*   camera_quaternion.perspective();*/
-    const auto view_proj = camera_quaternion.projectionMatrix() * camera_quaternion.viewMatrix(); //camera.Projection(g_w, g_h) * camera.View();
+ /*   _camera_quaternion.perspective();*/
+    const auto view_proj = _camera_quaternion.projectionMatrix() * _camera_quaternion.viewMatrix(); //camera.Projection(g_w, g_h) * camera.View();
     //const auto view_proj = camera.Projection(g_w, g_h)* camera.View();
 
     const vs_params_t vs_blinnphong_params = {
@@ -286,26 +290,26 @@ void _sg_render(int w, int h)
         gizmo_state.viewport_size = { (float)w, (float)h };
 
         // 2. 更新相机参数
-        gizmo_state.cam.yfov = camera_quaternion.fovy; // 确保 yfov 以弧度为单位
-        gizmo_state.cam.near_clip = camera_quaternion.zNear;
-        gizmo_state.cam.far_clip = camera_quaternion.zFar;
-        gizmo_state.cam.position = { camera_quaternion.position.x, camera_quaternion.position.y, camera_quaternion.position.z };
+        gizmo_state.cam.yfov = _camera_quaternion.fovy; // 确保 yfov 以弧度为单位
+        gizmo_state.cam.near_clip = _camera_quaternion.zNear;
+        gizmo_state.cam.far_clip = _camera_quaternion.zFar;
+        gizmo_state.cam.position = { _camera_quaternion.position.x, _camera_quaternion.position.y, _camera_quaternion.position.z };
 
 
         //glm::mat4 view_matrix = camera.View();
 
 
-        auto cameraOrientation = camera_quaternion.orient(0, 0);
+        auto cameraOrientation = _camera_quaternion.orient(0, 0);
 
        
 
         gizmo_state.cam.orientation = minalg::float4(cameraOrientation.x, cameraOrientation.y, cameraOrientation.z, cameraOrientation.w);
 
 
-        gizmo_state.ray_origin = { camera_quaternion.position.x, camera_quaternion.position.y, camera_quaternion.position.z };
+        gizmo_state.ray_origin = { _camera_quaternion.position.x, _camera_quaternion.position.y, _camera_quaternion.position.z };
 
 
-        const auto rayDir = get_ray_from_pixel({ lastCursor.x, lastCursor.y }, { 0.f, 0.f, g_w, g_h }, camera_quaternion).direction;
+        const auto rayDir = get_ray_from_pixel({ lastCursor.x, lastCursor.y }, { 0.f, 0.f, g_w, g_h }, _camera_quaternion).direction;
 
         gizmo_state.ray_direction = minalg::float3(rayDir.x, rayDir.y, rayDir.z);
 

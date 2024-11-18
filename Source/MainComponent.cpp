@@ -26,7 +26,7 @@
 //extern batteries::Camera camera;
 //extern batteries::CameraController cameracontroller;
 
-extern camera_quaternion camera_quaternion;
+extern camera_quaternion _camera_quaternion;
 
 
 extern minalg::float2 lastCursor;
@@ -80,7 +80,7 @@ void MainComponent::initialise()
     float w = getWidth();
     float h = getHeight();
 
-    camera_quaternion.setAspectRatio(w / h);
+    _camera_quaternion.setAspectRatio(w / h);
 
 
     _sg_initialize(w, h, fontMap);
@@ -117,7 +117,7 @@ void MainComponent::render()
     float h = getHeight();
 
 
-    camera_quaternion.setAspectRatio(w / h);
+    _camera_quaternion.setAspectRatio(w / h);
 
 
     _sg_render(w, h);

@@ -57,7 +57,7 @@ public:
     float getPosY();
     float getPosZ();
     void setFlightMode(bool);
-    glm::fquat orient(float, float);
+    glm::fquat orient(float pitch, float yaw);
     glm::vec3 move(float, float, float);
     bool visibleY();
     bool visibleZ();
