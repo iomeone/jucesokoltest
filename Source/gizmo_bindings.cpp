@@ -4,7 +4,7 @@
 #define MAX_GIZMO_INDICES 65536
 
 GizmoBindings::GizmoBindings() : index_count(0) {
-    // 创建顶点缓冲区
+    // 麓麓陆篓露楼碌茫禄潞鲁氓脟酶
     vertex_buffer = sg_make_buffer((sg_buffer_desc) {
         .usage = SG_USAGE_DYNAMIC,
             .type = SG_BUFFERTYPE_VERTEXBUFFER,
@@ -14,7 +14,7 @@ GizmoBindings::GizmoBindings() : index_count(0) {
 
     assert(vertex_buffer.id != SG_INVALID_ID);
 
-    // 创建索引缓冲区
+    // 麓麓陆篓脣梅脪媒禄潞鲁氓脟酶
     index_buffer = sg_make_buffer((sg_buffer_desc) {
         .usage = SG_USAGE_DYNAMIC,
             .type = SG_BUFFERTYPE_INDEXBUFFER,
@@ -37,13 +37,13 @@ void GizmoBindings::release() {
 
 
 void GizmoBindings::Update(const std::vector<tinygizmo::geometry_vertex>& vertices, const std::vector<minalg::uint3>& triangles) {
-    // 更新顶点缓冲区
+    // 赂眉脨脗露楼碌茫禄潞鲁氓脟酶
     sg_update_buffer(vertex_buffer, (sg_range){
         .ptr = vertices.data(),
             .size = sizeof(tinygizmo::geometry_vertex) * vertices.size()
     });
 
-    //// 将 triangles 展开为平面的索引数组
+    //// 陆芦 triangles 脮鹿驴陋脦陋脝陆脙忙碌脛脣梅脪媒脢媒脳茅
     //std::vector<uint32_t> indices;
     //indices.reserve(triangles.size() * 3);
     //for (const auto& tri : triangles) {
@@ -52,13 +52,13 @@ void GizmoBindings::Update(const std::vector<tinygizmo::geometry_vertex>& vertic
     //    indices.push_back(tri.z);
     //}
 
-    // 更新索引缓冲区
+    // 赂眉脨脗脣梅脪媒禄潞鲁氓脟酶
     sg_update_buffer(index_buffer, (sg_range){
         .ptr = triangles.data(),
             .size = sizeof(minalg::uint3) * triangles.size()
     });
 
-    // 保存索引数以便绘制时使用
+    // 卤拢麓忙脣梅脪媒脢媒脪脭卤茫禄忙脰脝脢卤脢鹿脫脙
     index_count = triangles.size()*3;
 }
 

@@ -8,10 +8,6 @@
       <FILE id="Si4uhM" name="common.h" compile="0" resource="0" file="Source/common.h"/>
     </GROUP>
     <GROUP id="{2E805012-9BA7-EF65-EB9E-5D10C0CD6611}" name="pipeline">
-      <FILE id="BYJKgN" name="gizmo_bindings.cpp" compile="1" resource="0"
-            file="Source/gizmo_bindings.cpp"/>
-      <FILE id="Xg9x0u" name="gizmo_bindings.h" compile="0" resource="0"
-            file="Source/gizmo_bindings.h"/>
       <FILE id="fsPyjy" name="gizmo_pipeline.cpp" compile="1" resource="0"
             file="Source/gizmo_pipeline.cpp"/>
       <FILE id="ooUkxX" name="gizmo_pipeline.h" compile="0" resource="0"
@@ -22,6 +18,10 @@
             file="Source/pos_color_pipeline.h"/>
     </GROUP>
     <GROUP id="{599C3BB3-D07C-FCA9-D8A5-91687F4A816C}" name="geometry">
+      <FILE id="BYJKgN" name="gizmo_bindings.cpp" compile="1" resource="0"
+            file="Source/gizmo_bindings.cpp"/>
+      <FILE id="Xg9x0u" name="gizmo_bindings.h" compile="0" resource="0"
+            file="Source/gizmo_bindings.h"/>
       <FILE id="azHyZy" name="GridShape.cpp" compile="1" resource="0" file="Source/GridShape.cpp"/>
       <FILE id="OZiYnc" name="GridShape.h" compile="0" resource="0" file="Source/GridShape.h"/>
       <FILE id="hhFgO9" name="CircleShape.cpp" compile="1" resource="0" file="Source/CircleShape.cpp"/>
@@ -56,6 +56,10 @@
       </GROUP>
     </GROUP>
     <GROUP id="{F4BFA2C5-5F83-85B8-074D-0394FF02F5C5}" name="Source">
+      <FILE id="Qg1cOT" name="camera_quaternion.cpp" compile="1" resource="0"
+            file="Source/camera_quaternion.cpp"/>
+      <FILE id="poiG9S" name="camera_quaternion.h" compile="0" resource="0"
+            file="Source/camera_quaternion.h"/>
       <FILE id="vFAmHA" name="tiny-gizmo.cpp" compile="1" resource="0" file="Source/tiny-gizmo.cpp"/>
       <FILE id="IFset3" name="tiny-gizmo.hpp" compile="0" resource="0" file="Source/tiny-gizmo.hpp"/>
       <FILE id="LCuxWB" name="Event.h" compile="0" resource="0" file="Source/Event.h"/>

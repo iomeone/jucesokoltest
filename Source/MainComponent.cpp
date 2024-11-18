@@ -18,8 +18,17 @@
 
 #include "camera.h"
 #include "tiny-gizmo.hpp"
-extern batteries::Camera camera;
-extern batteries::CameraController cameracontroller;
+
+
+#include "camera_quaternion.h"
+
+
+//extern batteries::Camera camera;
+//extern batteries::CameraController cameracontroller;
+
+extern camera_quaternion camera_quaternion;
+
+
 extern minalg::float2 lastCursor;
 extern bool b_left_mouse_down;
 
@@ -67,7 +76,14 @@ void MainComponent::initialise()
     // Initialise GL objects for rendering here.
 
     openGLContext.setSwapInterval(1);
-    _sg_initialize(getWidth(), getHeight(), fontMap);
+
+    float w = getWidth();
+    float h = getHeight();
+
+    camera_quaternion.setAspectRatio(w / h);
+
+
+    _sg_initialize(w, h, fontMap);
 
 
      
@@ -93,9 +109,18 @@ void MainComponent::render()
 
     //juce::gl::glClear(juce::gl::GL_COLOR_BUFFER_BIT | juce::gl::GL_DEPTH_BUFFER_BIT | juce::gl::GL_STENCIL_BUFFER_BIT);
 
+    //todo
+    //cameracontroller.Update(0.0166666675);
 
-    cameracontroller.Update(0.0166666675);
-    _sg_render(getWidth(), getHeight());
+
+    float w = getWidth();
+    float h = getHeight();
+
+
+    camera_quaternion.setAspectRatio(w / h);
+
+
+    _sg_render(w, h);
 
     //openGLContext.extensions.glBindFramebuffer(juce::gl::GL_FRAMEBUFFER, 0);
 
@@ -142,7 +167,8 @@ bool MainComponent::keyPressed(const juce::KeyPress& key)
         
     keyArray[e.key_code] = e;
 
-    cameracontroller.Event(e);
+    //todo
+    //cameracontroller.Event(e);
     return false;
 
 }
@@ -159,7 +185,8 @@ bool MainComponent::keyStateChanged(bool isKeyDown)
                 if (!juce::KeyPress::isKeyCurrentlyDown(keyEvent.key_code))
                 {
                     keyEvent.type = e_key_up;
-                    cameracontroller.Event(keyEvent);
+                    //todo
+                    //cameracontroller.Event(keyEvent);
                 }
             }
 
@@ -191,7 +218,8 @@ void MainComponent::mouseMove(const juce::MouseEvent& event)
     lastCursor.x = event.position.x;
     lastCursor.y = event.position.y;
 
-    cameracontroller.Event(e);
+    //todo
+    //cameracontroller.Event(e);
 }
 
 void MainComponent::mouseDown(const juce::MouseEvent& event)
@@ -219,7 +247,8 @@ void MainComponent::mouseDown(const juce::MouseEvent& event)
 
     isFirstMouseMove = false;
 
-    cameracontroller.Event(e);
+    //todo
+    //cameracontroller.Event(e);
 }
 
 void MainComponent::mouseUp(const juce::MouseEvent& event)
@@ -243,7 +272,8 @@ void MainComponent::mouseUp(const juce::MouseEvent& event)
 
     isFirstMouseMove = true;
 
-    cameracontroller.Event(e);
+    //todo
+    //cameracontroller.Event(e);
 }
 
 void MainComponent::mouseDrag(const juce::MouseEvent& event)
@@ -262,7 +292,8 @@ void MainComponent::mouseDrag(const juce::MouseEvent& event)
 
     previousMousePosition = event.position;
 
-    cameracontroller.Event(e);
+    //todo
+    //cameracontroller.Event(e);
 }
 
 void MainComponent::mouseWheelMove(const juce::MouseEvent& event, const juce::MouseWheelDetails& wheel)
@@ -271,5 +302,6 @@ void MainComponent::mouseWheelMove(const juce::MouseEvent& event, const juce::Mo
     e.type = e_mouse_scroll;
     e.scroll_y = wheel.deltaY; 
 
-    cameracontroller.Event(e);
+    //todo
+    //cameracontroller.Event(e);
 }
