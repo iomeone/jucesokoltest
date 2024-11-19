@@ -10,8 +10,8 @@ public:
     int GetNumElements() const { return num_elements; }
 
     // Method to rebuild the grid with new parameters
-    void RebuildGrid(float xfrom = -40.0f, float xto = 40.0f, float xstep = 4.0f,
-        float zfrom = -40.0f, float zto = 40.0f, float zstep = 4.0f);
+    void RebuildGrid(float xfrom = -140.0f, float xto = 140.0f, float xstep = 4.0f,
+        float zfrom = -140.0f, float zto = 140.0f, float zstep = 4.0f);
 
     void release();
 

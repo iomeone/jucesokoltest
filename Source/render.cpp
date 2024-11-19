@@ -126,12 +126,12 @@ void _sg_initialize(int w, int h, const std::map<std::string, std::pair<size_t, 
 
 
 
-    gizmo_transform.position = { 1.0f, 16.0f, 0.0f };
+    gizmo_transform.position = {0,0,0};
     gizmo_transform.orientation = { 0.0f, 0.0f, 0.0f, 1.0f };
     gizmo_transform.scale = { 1.0f, 1.0f, 1.0f };
 
 
-    _camera_quaternion.position = glm::vec3(0.0, 16.0, 10.0);
+
     _camera_quaternion.perspective();
 
     _camera_quaternion.orient(0.2f, .2f);
@@ -260,7 +260,7 @@ ray get_ray_from_pixel(const linalg::aliases::float2& pixel, const rect& viewpor
 
     const linalg::aliases::float4x4 inv_view_proj = linalg::inverse(pv_linalg);
     const linalg::aliases::float4 p0 = mul(inv_view_proj, linalg::aliases::float4(x, y, -1, 1)), p1 = mul(inv_view_proj, linalg::aliases::float4(x, y, +1, 1));
-    return{ {_camera_quaternion.position.x, _camera_quaternion.position.y, _camera_quaternion.position.z}, p1.xyz() * p0.w - p0.xyz() * p1.w};
+    return{ {_camera_quaternion.getposition().x, _camera_quaternion.getposition().y, _camera_quaternion.getposition().z}, p1.xyz() * p0.w - p0.xyz() * p1.w};
 }
 
 
@@ -293,7 +293,7 @@ void _sg_render(int w, int h)
         gizmo_state.cam.yfov = _camera_quaternion.fovy; // 确保 yfov 以弧度为单位
         gizmo_state.cam.near_clip = _camera_quaternion.zNear;
         gizmo_state.cam.far_clip = _camera_quaternion.zFar;
-        gizmo_state.cam.position = { _camera_quaternion.position.x, _camera_quaternion.position.y, _camera_quaternion.position.z };
+        gizmo_state.cam.position = { _camera_quaternion.getposition().x, _camera_quaternion.getposition().y, _camera_quaternion.getposition().z };
 
 
         //glm::mat4 view_matrix = camera.View();
@@ -306,7 +306,7 @@ void _sg_render(int w, int h)
         gizmo_state.cam.orientation = minalg::float4(cameraOrientation.x, cameraOrientation.y, cameraOrientation.z, cameraOrientation.w);
 
 
-        gizmo_state.ray_origin = { _camera_quaternion.position.x, _camera_quaternion.position.y, _camera_quaternion.position.z };
+        gizmo_state.ray_origin = { _camera_quaternion.getposition().x, _camera_quaternion.getposition().y, _camera_quaternion.getposition().z };
 
 
         const auto rayDir = get_ray_from_pixel({ lastCursor.x, lastCursor.y }, { 0.f, 0.f, g_w, g_h }, _camera_quaternion).direction;

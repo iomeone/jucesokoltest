@@ -24,14 +24,18 @@ camera_quaternion::camera_quaternion()
     bool flightMode
     */
 
-    fovy = 57.295779513f;
+    fovy = 45;
     zNear = 0.01;
     zFar = 100.0;
     flightMode = true;
-    position = glm::vec3(0.0, 0.0, 10.0);
+    position = glm::vec3(0.0, 2.0, 2.0);
     rotSpeed = glm::vec3(0.0, 0.0, 0.0);
     movSpeed = glm::vec3(0.0, 0.0, 0.0);
     orientation = glm::fquat(1.0f, 0.0f, 0.0f, 0.0f);
+
+    const glm::mat4 look_at = glm::lookAt(position, glm::vec3(0.0f), glm::normalize(glm::vec3(0.f, 1.0f, 0.0f)));
+    orientation = glm::toQuat(look_at);
+
     //glm::identity<glm::quat>();
 }
 
@@ -39,7 +43,7 @@ camera_quaternion::camera_quaternion()
 void camera_quaternion::perspective()
 {
     // Build the projection matrix.
-    projection = glm::perspective(fovy, aspect, zNear, zFar);
+    projection = glm::perspective((fovy), aspect, zNear, zFar);
     // Update the view and mvp.
     updateView();
 }
@@ -151,6 +155,13 @@ glm::vec3 camera_quaternion::move(float dx, float dy, float dz)
 
 void camera_quaternion::updateView()
 {
+
+    const glm::mat4 trans = glm::translate(glm::mat4(1.0f), -position);
+    const glm::mat4 l_view = glm::toMat4(orientation);
+    view = l_view * trans;
+
+    return ;
+ 
     /* View Matrix Format:
 
     +---+---+---+---+

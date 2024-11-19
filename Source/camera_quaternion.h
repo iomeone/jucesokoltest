@@ -34,11 +34,16 @@ public:
     float zNear;                        // The camera view frustrum near clipping plane.
     float zFar;                         // The camera view frustrum far clipping plane.
 
+private:
+    glm::vec3 position;
 public:
 
-
+    const glm::vec3& getposition()
+    {
+        return   position;
+    }
     
-    glm::vec3 position;
+   
     glm::vec3 rotSpeed;
     glm::vec3 movSpeed;
 
