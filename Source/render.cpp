@@ -126,7 +126,7 @@ void _sg_initialize(int w, int h, const std::map<std::string, std::pair<size_t, 
 
 
 
-    gizmo_transform.position = {0,0,0};
+    gizmo_transform.position = {-.7,0,0};
     gizmo_transform.orientation = { 0.0f, 0.0f, 0.0f, 1.0f };
     gizmo_transform.scale = { 1.0f, 1.0f, 1.0f };
 
@@ -374,12 +374,12 @@ void _sg_render(int w, int h)
 
 
 
-            //{
-            //    sg_apply_pipeline(_quard_pipeline_line_strip->pipeline_use_index);
-            //    sg_apply_uniforms(SG_SHADERSTAGE_VS, 0, SG_RANGE(vs_blinnphong_params));
-            //    sg_apply_bindings(SimpleQuad::Instance().GetBindings_use_index());
-            //    sg_draw(0, SimpleQuad::Instance().GetNumElements(), 1);
-            //}
+            {
+                sg_apply_pipeline(_quard_pipeline_line_strip->pipeline_use_index);
+                sg_apply_uniforms(SG_SHADERSTAGE_VS, 0, SG_RANGE(vs_blinnphong_params));
+                sg_apply_bindings(SimpleQuad::Instance().GetBindings_use_index());
+                sg_draw(0, SimpleQuad::Instance().GetNumElements(), 1);
+            }
 
             if (0)
             {

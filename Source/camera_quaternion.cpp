@@ -28,7 +28,7 @@ camera_quaternion::camera_quaternion()
     zNear = 0.01;
     zFar = 100.0;
     flightMode = true;
-    position = glm::vec3(0.0, 2.0, 2.0);
+    position = glm::vec3(0.0, 6.0, 12.0);
     rotSpeed = glm::vec3(0.0, 0.0, 0.0);
     movSpeed = glm::vec3(0.0, 0.0, 0.0);
     orientation = glm::fquat(1.0f, 0.0f, 0.0f, 0.0f);
@@ -243,7 +243,7 @@ glm::vec3 camera_quaternion::getCameraForward()
 }
 
 
-glm::mat4 camera_quaternion::projectionViewMatrix() const
+glm::mat4 camera_quaternion::projectionViewMatrix() 
 {
     return projection * view;
 }

@@ -72,12 +72,18 @@ public:
     glm::vec3 getCameraFPForward();     // Get the first person forward vector.
 
 
-    glm::mat4 projectionViewMatrix() const;
+    glm::mat4 projectionViewMatrix() ;
 
-    glm::mat4 viewMatrix()
+    glm::mat4& viewMatrix()
     {
-        return glm::mat4_cast(orientation);
+        return view;
     }
+    
+
+    //glm::mat4 viewMatrix()
+    //{
+    //    return glm::mat4_cast(orientation);
+    //}
 
     glm::mat4 projectionMatrix() const
     {
